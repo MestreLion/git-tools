@@ -64,7 +64,7 @@ usage() {
 	  --in-place[=SUFFIX]  edit files in place, creating a backup with
 	                       SUFFIX extension. Default if blank is ""$ext"
 
-	   --no-backup         disables backup
+	  --no-backup          disables backup
 
 	Copyright (C) 2012 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
 	License: GPLv3 or later. See <http://www.gnu.org/licenses/gpl.html>
@@ -95,8 +95,6 @@ files+=( "$@" )
 
 ext=${suffix:-$ext}
 
-((backup)) && bkpopts=(--backup=existing --suffix="$ext")
-
 for file in "${files[@]}"; do
 
 	[[ -f "$file" ]] || skip "not a valid file"
@@ -104,6 +102,7 @@ for file in "${files[@]}"; do
 	if ((inplace)); then
 		outfile=$(tempfile) || skip "could not create temporary file"
 		trap 'rm -f -- "$outfile"' EXIT
+		cp "$file" "$outfile" || skip
 		exec 3>"$outfile"
 	else
 		exec 3>&1
@@ -118,7 +117,9 @@ for file in "${files[@]}"; do
 
 	diff "$file" "$outfile" >/dev/null && skip "no conflict markers found"
 
-	mv "${bkpopts[@]}" "$outfile" "$file" || skip "could not edit in-place"
+	((backup)) && { cp "$file" "$file$ext" || skip "could not backup" ; }
+
+	cp "$outfile" "$file" || skip "could not edit in-place"
 
 	((verbose)) && message "resolved ${file}"
 done
