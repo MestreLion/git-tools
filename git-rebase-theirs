@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 #
 # git-rebase-theirs - Resolve rebase conflicts by favoring 'theirs' version
 #
@@ -18,14 +18,14 @@
 #    along with this program. If not see <http://www.gnu.org/licenses/gpl.html>
 
 #Defaults:
-verbose=1
+verbose=0
 backup=1
 inplace=0
 ext=".bak"
 
-fatal()   { [[ "$1" ]] && echo "$myname: error: $1" >&2 ; exit ${2:-1} ; }
-message() { ((verbose)) && printf "$1\n" >&2 ; }
-argerr()  { echo "$myname: ${1:-error}" >&2 ; usage 1 ; }
+message() { printf "%s\n" "$1" >&2 ; }
+skip()    { message "skipping ${2:-$file}${1:+: $1}"; continue ; }
+argerr()  { printf "%s: %s\n" "$myname" "${1:-error}" >&2 ; usage 1 ; }
 invalid() { argerr "invalid option: $1" ; }
 missing() { argerr "missing${1:+ $1} operand." ; }
 
@@ -99,11 +99,10 @@ ext=${suffix:-$ext}
 
 for file in "${files[@]}"; do
 
-	message "processing ${file}:"
-	[[ -f "$file" ]] || fatal "$file is not a valid file"
+	[[ -f "$file" ]] || skip "not a valid file"
 
 	if ((inplace)); then
-		outfile=$(tempfile) || fatal "could not create temporary file"
+		outfile=$(tempfile) || skip "could not create temporary file"
 		trap 'rm -f -- "$outfile"' EXIT
 		exec 3>"$outfile"
 	else
@@ -117,12 +116,9 @@ for file in "${files[@]}"; do
 
 	((inplace)) || continue
 
-	diff "$file" "$outfile" >/dev/null && {
-		message "${file} has no conflict markers, skipping."
-		continue
-	}
+	diff "$file" "$outfile" >/dev/null && skip "no conflict markers found"
 
-	mv "${bkpopts[@]}" "$outfile" "$file" ||
-		fatal "could not edit original file in-place"
+	mv "${bkpopts[@]}" "$outfile" "$file" || skip "could not edit in-place"
 
+	((verbose)) && message "resolved ${file}"
 done
