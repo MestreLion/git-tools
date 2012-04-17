@@ -115,6 +115,11 @@ for file in "${files[@]}"; do
 
 	((inplace)) || continue
 
+	diff "$file" "$outfile" >/dev/null && {
+		message "${file} has no conflict markers, skipping."
+		continue
+	}
+
 	((backup)) && cp "$file" "${file}.${ext}" || "could not create backup"
 
 	mv "$outfile" "$file" || "could edit original file in-place"
