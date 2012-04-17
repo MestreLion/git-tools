@@ -21,7 +21,7 @@
 verbose=1
 backup=1
 inplace=0
-ext="bak"
+ext=".bak"
 
 fatal()   { [[ "$1" ]] && echo "$myname: error: $1" >&2 ; exit ${2:-1} ; }
 message() { ((verbose)) && printf "$1\n" >&2 ; }
@@ -58,13 +58,13 @@ usage() {
 	using --in-place, which, unlike sed, creates a backup by default.
 
 	Options:
-	  -h|--help         show this page.
-	  -v|--verbose      print more details in stderr.
+	  -h|--help            show this page.
+	  -v|--verbose         print more details in stderr.
 
-	  --in-place[=EXT]  edit files in place, creating a backup with EXT
-	                    extension. Default EXT if blank is "$ext"
+	  --in-place[=SUFFIX]  edit files in place, creating a backup with
+	                       SUFFIX extension. Default if blank is ""$ext"
 
-	   --no-backup      disables backup
+	   --no-backup         disables backup
 
 	Copyright (C) 2012 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
 	License: GPLv3 or later. See <http://www.gnu.org/licenses/gpl.html>
@@ -82,7 +82,7 @@ while (( $# )); do
 	--no-backup   ) backup=0         ;;
 	--in-place    ) inplace=1        ;;
 	--in-place=*  ) inplace=1
-	                prefix="${1#*=}" ;;
+	                suffix="${1#*=}" ;;
 	-*            ) invalid "$1"     ;;
 	--            ) shift ; break    ;;
 	*             ) files+=( "$1" )  ;;
@@ -93,7 +93,9 @@ files+=( "$@" )
 
 (( "${#files[@]}" )) || missing "FILE"
 
-ext=${prefix:-$ext}
+ext=${suffix:-$ext}
+
+((backup)) && bkpopts=(--backup=existing --suffix="$ext")
 
 for file in "${files[@]}"; do
 
@@ -120,7 +122,7 @@ for file in "${files[@]}"; do
 		continue
 	}
 
-	((backup)) && cp "$file" "${file}.${ext}" || "could not create backup"
+	mv "${bkpopts[@]}" "$outfile" "$file" ||
+		fatal "could not edit original file in-place"
 
-	mv "$outfile" "$file" || "could edit original file in-place"
 done
