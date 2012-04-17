@@ -58,13 +58,13 @@ usage() {
 	using --in-place, which, unlike sed, creates a backup by default.
 
 	Options:
-	  -h|--help            show this page.
-	  -v|--verbose         print more details in stderr.
+	  -h|--help         show this page.
+	  -v|--verbose      print more details in stderr.
 
-	  --in-place[=SUFFIX]  edit files in place, creating a backup with
-	                       SUFFIX extension. Default if ommited is ""$ext"
+	  --in-place[=EXT]  edit files in place, creating a backup with EXT
+	                    extension. Default EXT if blank is "$ext"
 
-	   --no-backup         disables creation of backup
+	   --no-backup      disables backup
 
 	Copyright (C) 2012 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
 	License: GPLv3 or later. See <http://www.gnu.org/licenses/gpl.html>
