@@ -21,7 +21,9 @@
 # See http://stackoverflow.com/questions/3111515
 
 #Defaults:
-msg="removing files before merge"
+msg="remove files from '%s' before merge"
+msgmerge="Merge stripped branch '<branch>'"
+verbose=0
 
 usage() {
 	cat <<- USAGE
@@ -40,16 +42,27 @@ usage() {
 	Useful for ignoring a folder in <branch> before merging it with
 	current branch. Works by deleting FILE(S) in a detached commit based
 	on <branch>, and then performing the merge of this new commit in the
-	current branch.
+	current branch. Note that <branch> is not changed by this procedure.
 
 	For more information, see <http://stackoverflow.com/questions/3111515>
 
 	Options:
 	  -h|--help     show this page.
+	  -v|--verbose  do not supress normal output of internal steps from
+	                git checkout, rm, commit. By default, only git merge
+	                output is shown. Errors, however, are never supressed
 
-	     --msg MSG  message for the removal commit in <branch>. Not to be
+	  --msg=MSG     message for the removal commit in <branch>. Not to be
 	                confused with the message of the merge commit, which
-	                is -m | --message. Default is "$msg"
+	                is set by -m or --message. Default is:
+	                "$msg"
+
+	  -m MSG        message for the merge commit. Since we are not merging
+	  --message=MSG <branch> directly, but rather a detached commit based
+	                on it, we forge a message that prevents git's default
+	                that uses the full SHA of our commit. Forged message
+	                replaces "%s" for <branch> name. Default is:
+	                "$msgmerge"
 
 	Additional options are passed unchecked to git merge
 
@@ -74,6 +87,7 @@ mergeopts=()
 while (( $# )); do
 	case "$1" in
 	-h|--help     ) usage               ;;
+	-v|--verbose  ) verbose=1           ;;
 	--msg=*       ) msg="${1#*=}"       ;;
 	-*            ) mergeopts+=( "$1" ) ;;
 	*             ) branch="$1"
@@ -97,11 +111,11 @@ gitbranch() {
 }
 
 original=$(gitbranch HEAD)
-branch=$(gitsha "$branch")
+branchsha=$(gitsha "$branch")
 
-git checkout "$branch"    &&
-git rm -rf "${files[@]}"  &&
-git commit -m "$msg"      &&
-new=$(gitsha HEAD)        &&
-git checkout "$original"  &&
-git merge "${mergeopts[@]}" "$new"
+git checkout "$branchsha"    &&
+git rm -rf "${files[@]}"     &&
+git commit -m "$msg"         &&
+newsha=$(gitsha HEAD)        &&
+git checkout "$original"     &&
+git merge "${mergeopts[@]}" "$newsha"
