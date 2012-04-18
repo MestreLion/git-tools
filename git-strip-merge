@@ -21,7 +21,7 @@
 # See http://stackoverflow.com/questions/3111515
 
 #Defaults:
-msg="remove files from '%s' before merge"
+msgcomit="remove files from '<branch>' before merge"
 msgmerge="Merge stripped branch '<branch>'"
 verbose=0
 
@@ -37,12 +37,14 @@ usage() {
 	fi
 	cat <<-USAGE
 
-	Wrapper for git-merge that delete files on "foreign" <branch>
+	git-merge that delete files on "foreign" <branch> before merging
 
 	Useful for ignoring a folder in <branch> before merging it with
 	current branch. Works by deleting FILE(S) in a detached commit based
 	on <branch>, and then performing the merge of this new commit in the
 	current branch. Note that <branch> is not changed by this procedure.
+	Also note that <branch> may actually be any reference, like a tag,
+	or a remote branch, or even a commit SHA.
 
 	For more information, see <http://stackoverflow.com/questions/3111515>
 
@@ -61,8 +63,11 @@ usage() {
 	  --message=MSG <branch> directly, but rather a detached commit based
 	                on it, we forge a message that prevents git's default
 	                that uses the full SHA of our commit. Forged message
-	                replaces "%s" for <branch> name. Default is:
+	                replaces "<branch>" for <branch> name. Default is:
 	                "$msgmerge"
+
+	  For both commit messages, the token "<branch>" is replaced for the
+	  actual <branch> name
 
 	Additional options are passed unchecked to git merge
 
@@ -88,7 +93,7 @@ while (( $# )); do
 	case "$1" in
 	-h|--help     ) usage               ;;
 	-v|--verbose  ) verbose=1           ;;
-	--msg=*       ) msg="${1#*=}"       ;;
+	--msg=*       ) msgcomit="${1#*=}"  ;;
 	-*            ) mergeopts+=( "$1" ) ;;
 	*             ) branch="$1"
 	                shift ; break       ;;
@@ -98,10 +103,12 @@ done
 files+=( "$@" )
 
 # Argument checking
-[[ "$branch" ]]    || missing ""    "<branch>"
+[[ "$branch"   ]]  || missing ""    "<branch>"
 (( ${#files[@]} )) || missing ""    "FILE"
-[[ "$msg"    ]]    || missing "msg" "MSG"
+[[ "$msgcomit" ]]  || missing "msg" "MSG"
 
+
+if ((verbose)); then quiet=(); else quiet=(--quiet); fi
 
 # Here the fun begins...
 gitsha()    { git rev-parse "$1" ; }
@@ -110,12 +117,17 @@ gitbranch() {
 	gitsha "$1"
 }
 
+msgcomit=${msgcomit//<branch>/$branch}
+msgmerge=${msgmerge//<branch>/$branch}
+
 original=$(gitbranch HEAD)
 branchsha=$(gitsha "$branch")
 
-git checkout "$branchsha"    &&
-git rm -rf "${files[@]}"     &&
-git commit -m "$msg"         &&
-newsha=$(gitsha HEAD)        &&
-git checkout "$original"     &&
+trap 'git checkout "$original"' EXIT
+
+git checkout "$branchsha"   "${quiet[@]}" &&
+git rm -rf "${files[@]}"    "${quiet[@]}" &&
+git commit -m "$msgcomit"   "${quiet[@]}" &&
+newsha=$(gitsha HEAD)                     &&
+git checkout "$original"    "${quiet[@]}" &&
 git merge "${mergeopts[@]}" "$newsha"
