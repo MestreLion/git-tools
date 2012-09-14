@@ -52,7 +52,7 @@ usage() {
 	For older versions, $myname is the solution. And Despite the name,
 	it's also useful for fixing failed cherry-picks
 
-	It works by discarding all lines between '<<<<<<< HEAD' and '========'
+	It works by discarding all lines between '<<<<<<< ' and '========'
 	inclusive, and also the the '>>>>>> commit' marker.
 
 	By default it outputs to stdout, but files can be edited in-place
@@ -63,7 +63,7 @@ usage() {
 	  -v|--verbose         print more details in stderr.
 
 	  --in-place[=SUFFIX]  edit files in place, creating a backup with
-	                       SUFFIX extension. Default if blank is ""$ext"
+	                       SUFFIX extension. Default if blank is "$ext"
 
 	  --no-backup          disables backup
 
@@ -102,7 +102,7 @@ for file in "${files[@]}"; do
 
 	if ((inplace)); then
 		outfile=$(tempfile) || skip "could not create temporary file"
-		trap 'rm -f -- "$outfile"' EXIT
+		trap "rm -f -- '$outfile'" EXIT
 		cp "$file" "$outfile" || skip
 		exec 3>"$outfile"
 	else
@@ -110,7 +110,7 @@ for file in "${files[@]}"; do
 	fi
 
 	# Do the magic :)
-	awk '/^<+ HEAD$/,/^=+$/{next} /^>+ /{next} 1' "$file" >&3
+	awk '/^<<<<<<<+ .+$/,/^=+$/{next} /^>>>>>>>+ /{next} 1' "$file" >&3
 
 	exec 3>&-
 
