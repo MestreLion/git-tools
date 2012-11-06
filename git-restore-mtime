@@ -82,9 +82,9 @@ logger.basicConfig(level=level, format='%(message)s')
 
 
 # UI done, it's show time!
-start = time.clock()
+start = time.time() # yes, Wall time. CPU time is not realistic for users.
 
-lines = loglines = logentries = totalfiles = \
+lines = loglines = commits = totalfiles = \
 ignoredfiles = files = touches = errors = 0
 
 # List all files currently in work tree
@@ -171,11 +171,10 @@ if filelist:
 # TODO: use git-log --before=mtime to show how many log entries were skipped
 logger.info(
     "Statistics:\n"
-    "{:13,} seconds\n"
+    "{:13,.2f} seconds\n"
     "{:13,} log lines processed\n"
-    "{:13,} log entries evaluated"
-    "".format(time.clock()-start, loglines, logentries, totalfiles,
-              ignoredfiles, files, errors, touches))
+    "{:13,} commits evaluated"
+    "".format(time.time()-start, loglines, commits))
 
 if touches != totalfiles:
                  logger.info("{:13,} total files".format(totalfiles))
@@ -187,22 +186,31 @@ logger.info("{:13,} updated files".format(touches))
 
 # Statistics for some large projects
 #bash
-#         0.06 seconds
+#         0.27 seconds
 #        5,750 log lines processed
-#           62 log entries evaluated
+#           62 commits evaluated
 #        1,155 updated files
 
 #git
-#         0.81 seconds
-#       96,587 log lines processed
-#       24,215 log entries evaluated
-#        2,500 total files
-#            5 ignored files
-#           98 missing files
-#        2,397 updated files
+#         3.71 seconds
+#       96,702 log lines processed
+#       24,217 commits evaluated
+#        2,495 updated files
 
 #wine
-#         7.91 seconds
+#        13.53 seconds
 #      443,979 log lines processed
-#       91,703 log entries evaluated
+#       91,703 commits evaluated
 #        6,005 updated files
+
+#linux kernel
+#       159.11 seconds
+#    1,484,567 log lines processed
+#      313,164 commits evaluated
+#       40,902 updated files
+
+#linux kernel (with --include-merge)
+#     6,460.88 seconds (1h48m)
+#   34,495,300 log lines processed
+#      238,711 commits evaluated
+#       40,902 updated files
