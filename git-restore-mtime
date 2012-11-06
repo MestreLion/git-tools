@@ -33,6 +33,9 @@
 
 # TODO:
 # - allow --work-dir and --git-dir
+# - add --dirs (--directories?) option to also update dirs (any A or D file but not M)
+# - do the pathspec filter!
+# - add --include-merge, --no-missing
 
 if __name__ != "__main__":
     raise ImportError("%s should not be used as a module." % __name__)
