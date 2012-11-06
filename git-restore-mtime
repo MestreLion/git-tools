@@ -1,0 +1,205 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# git-restore-mtime - Change mtime of files based on commit date of last change
+#
+#    Copyright (C) 2012 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program. See <http://www.gnu.org/licenses/gpl.html>
+#
+# Change the modification time (mtime) of all files in work tree, based on the
+# date of the most recent commit that modified the file.
+#
+# Useful prior to generating release tarballs, so each file is archived with a
+# date that resembles the date when the file was actually last modified.
+# (assuming the actual modification date and its commit date are close)
+
+# By default ignores all ignored and untracked files, and also refuses to work
+# on trees with uncommited changes.
+#
+# Only works on conventional repositories where work tree is current dir and
+# git dir is "./.git"
+
+# TODO:
+# - allow --work-dir and --git-dir
+
+if __name__ != "__main__":
+    raise ImportError("%s should not be used as a module." % __name__)
+
+import subprocess, shlex
+import sys, os.path
+import logging as logger
+import argparse
+import time
+
+dir = os.path.curdir
+
+parser = argparse.ArgumentParser(
+    description='Restore original modification time of files based on '
+                'the date of the most recent commit that modified them. '
+                'Useful when generating release tarballs.')
+
+parser.add_argument('--quiet', '-q',
+                    action="store_true",
+                    help='suppress all informative messages and summary statistics.')
+
+parser.add_argument('--verbose', '-v',
+                    action="store_true",
+                    help='print additional information for each processed file. '
+                    'Overwrites --quiet.')
+
+parser.add_argument('--force', '-f',
+                    action="store_true",
+                    help='forces execution on trees with uncommited changes.')
+
+parser.add_argument('pathspec',
+                    nargs='*', default=dir,
+                    help='modify only paths (dirs or files) starting with PATHSPEC, '
+                        'relative to work tree root directory. '
+                        'Default is to modify all non-ignored, tracked files.')
+
+args = parser.parse_args()
+
+if   args.verbose: level = logger.DEBUG
+elif args.quiet:   level = logger.WARN
+else:              level = logger.INFO
+
+logger.basicConfig(level=level, format='%(message)s')
+
+
+# UI done, it's show time!
+start = time.clock()
+
+lines = loglines = logentries = totalfiles = \
+ignoredfiles = files = touches = errors = 0
+
+# List all files currently in work tree
+filelist = []
+for root, subdirs, files in os.walk(dir):
+    if '.git' in subdirs:
+        subdirs.remove('.git')
+
+    for file in files:
+
+        filelist.append(os.path.join(root, file))
+
+totalfiles = files = len(filelist)
+logger.info("{:,} files to be processed in work dir".format(totalfiles))
+
+
+# Discard untracked and ignored files
+gitsts = subprocess.Popen(shlex.split('git status --porcelain --ignored'),
+                          stdout=subprocess.PIPE, cwd=dir)
+for line in gitsts.stdout:
+    status = line[:2]
+    filespec = os.path.join(dir, line[3:-1]) # can be a dir
+    if status in ['??', '!!']:
+        for file in filelist:
+            if file.startswith(filespec):
+                logger.debug("Ignoring: %s", file.replace(dir,'.',1))
+                filelist.remove(file)
+                files -= 1
+                ignoredfiles += 1
+    elif not args.force:
+        logger.critical(
+         "ERROR: There are local changes in the working directory.\n"
+         "This could lead to unexpected results, specially when renaming or deleting files.\n"
+         "Please, commit your changes (or use --force) and try again.\n"
+         "Aborting\n")
+        sys.exit(1)
+
+if ignoredfiles:
+    logger.info("{:,} files to process after ignoring {:,}"
+                "".format(files, ignoredfiles))
+
+
+# Process the log until all files are 'touched'
+logger.debug("Line #\tLog #\tFiles\tmtime\tFile")
+gitlog = subprocess.Popen(shlex.split('git whatchanged --pretty=%at'),
+                          stdout=subprocess.PIPE, cwd=dir)
+for line in gitlog.stdout:
+    loglines += 1
+    line = line.strip()
+
+    # Blank line between Date and list of files
+    if not line: continue
+
+    # File line
+    if line.startswith(':'):
+        file = os.path.join(dir, line.split('\t')[-1])
+        if file in filelist:
+            logger.debug("%d\t%d\t%d\t%s\t%s",
+                         loglines, logentries, files, time.ctime(mtime), file)
+            filelist.remove(file)
+            files -= 1
+            try:
+                os.utime(file, (mtime, mtime))
+                touches += 1
+            except Exception as e:
+                logger.error("ERROR: %s\n", e)
+                errors += 1
+    # Date line
+    else:
+        logentries += 1
+        mtime = long(line)
+
+    # All files done?
+    if not files:
+        break
+
+# Missing files
+if filelist:
+    if args.verbose:
+        for file in filelist:
+            logger.debug("WARNING: not found in log: %s", file)
+
+# Final statistics
+# TODO: use git-log --before=mtime to show how many log entries were skipped
+logger.info(
+    "Statistics:\n"
+    "{:13,} seconds\n"
+    "{:13,} log lines processed\n"
+    "{:13,} log entries evaluated"
+    "".format(time.clock()-start, loglines, logentries, totalfiles,
+              ignoredfiles, files, errors, touches))
+
+if touches != totalfiles:
+                 logger.info("{:13,} total files".format(totalfiles))
+if ignoredfiles: logger.info("{:13,} ignored files".format(ignoredfiles))
+if files:        logger.info("{:13,} missing files".format(files))
+if errors:       logger.info("{:13,} update errors".format(errors))
+
+logger.info("{:13,} updated files".format(touches))
+
+# Statistics for some large projects
+#bash
+#         0.06 seconds
+#        5,750 log lines processed
+#           62 log entries evaluated
+#        1,155 updated files
+
+#git
+#         0.81 seconds
+#       96,587 log lines processed
+#       24,215 log entries evaluated
+#        2,500 total files
+#            5 ignored files
+#           98 missing files
+#        2,397 updated files
+
+#wine
+#         7.91 seconds
+#      443,979 log lines processed
+#       91,703 log entries evaluated
+#        6,005 updated files
