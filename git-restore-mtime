@@ -86,6 +86,7 @@ start = time.time() # yes, Wall time. CPU time is not realistic for users.
 
 lines = loglines = commits = totalfiles = \
 ignoredfiles = files = touches = errors = 0
+stepmissing = 100
 
 # List all files currently in work tree
 filelist = []
@@ -129,43 +130,56 @@ if ignoredfiles:
 
 # Process the log until all files are 'touched'
 logger.debug("Line #\tLog #\tFiles\tmtime\tFile")
-gitlog = subprocess.Popen(shlex.split('git whatchanged --pretty=%at'),
-                          stdout=subprocess.PIPE, cwd=dir)
-for line in gitlog.stdout:
-    loglines += 1
-    line = line.strip()
+def parselog(merge=False, filterlist=[]):
+    global loglines, files, touches, errors, commits
 
-    # Blank line between Date and list of files
-    if not line: continue
+    gitlog = subprocess.Popen(shlex.split('git whatchanged --pretty=%at') +
+                              (['-m'] if merge else []) +
+                              filterlist,
+                              stdout=subprocess.PIPE, cwd=dir)
+    for line in gitlog.stdout:
+        loglines += 1
+        line = line.strip()
 
-    # File line
-    if line.startswith(':'):
-        file = os.path.join(dir, line.split('\t')[-1])
-        if file in filelist:
-            logger.debug("%d\t%d\t%d\t%s\t%s",
-                         loglines, logentries, files, time.ctime(mtime), file)
-            filelist.remove(file)
-            files -= 1
-            try:
-                os.utime(file, (mtime, mtime))
-                touches += 1
-            except Exception as e:
-                logger.error("ERROR: %s\n", e)
-                errors += 1
-    # Date line
-    else:
-        logentries += 1
-        mtime = long(line)
+        # Blank line between Date and list of files
+        if not line: continue
 
-    # All files done?
-    if not files:
-        break
+        # File line
+        if line.startswith(':'):
+            file = os.path.join(dir, line.split('\t')[-1])
+            if file in filelist:
+                logger.debug("%d\t%d\t%d\t%s\t%s",
+                             loglines, commits, files,
+                             time.ctime(mtime), file)
+                filelist.remove(file)
+                files -= 1
+                try:
+                    os.utime(file, (mtime, mtime))
+                    touches += 1
+                except Exception as e:
+                    logger.error("ERROR: %s\n", e)
+                    errors += 1
+        # Date line
+        else:
+            commits += 1
+            mtime = long(line)
+
+        # All files done?
+        if not files:
+            break
+parselog()
 
 # Missing files
 if filelist:
-    if args.verbose:
-        for file in filelist:
-            logger.debug("WARNING: not found in log: %s", file)
+
+    # Try to find them in merge logs (usually HUGE, thus MUCH slower!)
+    for i in range(0, len(filelist), stepmissing):
+        parselog(merge=True, filterlist=filelist[i:i+stepmissing])
+
+    # Still missing some?
+    for file in filelist:
+        logger.warn("WARNING: not found in log: %s", file)
+
 
 # Final statistics
 # TODO: use git-log --before=mtime to show how many log entries were skipped
