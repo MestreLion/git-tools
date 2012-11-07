@@ -173,8 +173,9 @@ parselog()
 if filelist:
 
     # Try to find them in merge logs (usually HUGE, thus MUCH slower!)
-    for i in range(0, len(filelist), stepmissing):
-        parselog(merge=True, filterlist=filelist[i:i+stepmissing])
+    filterlist = list(filelist)
+    for i in range(0, len(filterlist), stepmissing):
+        parselog(merge=True, filterlist=filterlist[i:i+stepmissing])
 
     # Still missing some?
     for file in filelist:
@@ -199,6 +200,7 @@ if errors:       logger.info("{:13,} update errors".format(errors))
 logger.info("{:13,} updated files".format(touches))
 
 # Statistics for some large projects
+
 #bash
 #         0.27 seconds
 #        5,750 log lines processed
