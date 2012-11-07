@@ -89,20 +89,21 @@ ignoredfiles = files = touches = errors = 0
 stepmissing = 100
 
 # List all files currently in work tree
-filelist = []
+filelist = set()
 for root, subdirs, files in os.walk(dir):
     if '.git' in subdirs:
         subdirs.remove('.git')
 
     for file in files:
 
-        filelist.append(os.path.join(root, file))
+        filelist.add(os.path.join(root, file))
 
 totalfiles = files = len(filelist)
 logger.info("{:,} files to be processed in work dir".format(totalfiles))
 
 
 # Discard untracked and ignored files
+ignoredlist = set()
 gitsts = subprocess.Popen(shlex.split('git status --porcelain --ignored'),
                           stdout=subprocess.PIPE, cwd=dir)
 for line in gitsts.stdout:
@@ -112,7 +113,7 @@ for line in gitsts.stdout:
         for file in filelist:
             if file.startswith(filespec):
                 logger.debug("Ignoring: %s", file.replace(dir,'.',1))
-                filelist.remove(file)
+                ignoredlist.add(file)
                 files -= 1
                 ignoredfiles += 1
     elif not args.force:
@@ -124,6 +125,7 @@ for line in gitsts.stdout:
         sys.exit(1)
 
 if ignoredfiles:
+    filelist -= ignoredlist
     logger.info("{:,} files to process after ignoring {:,}"
                 "".format(files, ignoredfiles))
 
