@@ -46,7 +46,7 @@ import logging as logger
 import argparse
 import time
 
-dir = os.path.curdir
+workdir = os.path.abspath(os.path.curdir)
 
 parser = argparse.ArgumentParser(
     description='Restore original modification time of files based on '
@@ -67,7 +67,7 @@ parser.add_argument('--force', '-f',
                     help='forces execution on trees with uncommited changes.')
 
 parser.add_argument('pathspec',
-                    nargs='*', default=dir,
+                    nargs='*', default=[],
                     help='modify only paths (dirs or files) starting with PATHSPEC, '
                         'relative to work tree root directory. '
                         'Default is to modify all non-ignored, tracked files.')
@@ -89,14 +89,15 @@ ignoredfiles = files = touches = errors = 0
 stepmissing = 100
 
 # List all files currently in work tree
+# git commands always print paths relative to work tree root
 filelist = set()
-for root, subdirs, files in os.walk(dir):
+for root, subdirs, files in os.walk(workdir):
     if '.git' in subdirs:
         subdirs.remove('.git')
 
     for file in files:
-
-        filelist.add(os.path.join(root, file))
+        # Always add them relative to worktree root
+        filelist.add(os.path.relpath(os.path.join(root, file), workdir))
 
 totalfiles = files = len(filelist)
 logger.info("{:,} files to be processed in work dir".format(totalfiles))
@@ -105,14 +106,16 @@ logger.info("{:,} files to be processed in work dir".format(totalfiles))
 # Discard untracked and ignored files
 ignoredlist = set()
 gitsts = subprocess.Popen(shlex.split('git status --porcelain --ignored'),
-                          stdout=subprocess.PIPE, cwd=dir)
+                          stdout=subprocess.PIPE)
 for line in gitsts.stdout:
     status = line[:2]
-    filespec = os.path.join(dir, line[3:-1]) # can be a dir
-    if status in ['??', '!!']:
+    filespec = line[3:-1]
+    if status in ['??', '!!']: # also safe to ignore: 'A ', ' M'
+        # filespec can be a dir, so we must iterate on filelist
         for file in filelist:
-            if file.startswith(filespec):
-                logger.debug("Ignoring: %s", file.replace(dir,'.',1))
+            if ( (filespec.endswith('/') and  file.startswith(filespec)) or
+                 (file == filespec) ):
+                logger.debug("Ignoring: %s", file)
                 ignoredlist.add(file)
                 files -= 1
                 ignoredfiles += 1
@@ -138,7 +141,7 @@ def parselog(merge=False, filterlist=[]):
     gitlog = subprocess.Popen(shlex.split('git whatchanged --pretty=%at') +
                               (['-m'] if merge else []) +
                               filterlist,
-                              stdout=subprocess.PIPE, cwd=dir)
+                              stdout=subprocess.PIPE)
     for line in gitlog.stdout:
         loglines += 1
         line = line.strip()
@@ -148,7 +151,7 @@ def parselog(merge=False, filterlist=[]):
 
         # File line
         if line.startswith(':'):
-            file = os.path.join(dir, line.split('\t')[-1])
+            file = line.split('\t')[-1]
             if file in filelist:
                 logger.debug("%d\t%d\t%d\t%s\t%s",
                              loglines, commits, files,
@@ -156,7 +159,7 @@ def parselog(merge=False, filterlist=[]):
                 filelist.remove(file)
                 files -= 1
                 try:
-                    os.utime(file, (mtime, mtime))
+                    os.utime(os.path.join(workdir, file), (mtime, mtime))
                     touches += 1
                 except Exception as e:
                     logger.error("ERROR: %s\n", e)
