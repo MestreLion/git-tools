@@ -28,12 +28,8 @@
 # By default ignores all ignored and untracked files, and also refuses to work
 # on trees with uncommited changes.
 #
-# Only works on conventional repositories where work tree is current dir and
-# git dir is "./.git"
-
 # TODO:
 # - add --directories to also update dirs (any dir/file in log as A or D, not M)
-# - add --skip-missing
 
 if __name__ != "__main__":
     raise ImportError("%s should not be used as a module." % __name__)
@@ -71,12 +67,22 @@ parser.add_argument('--merge', '-m',
                         '(all files are found sooner), which improves performance, '
                         'sometimes substantially. But since merge commits are '
                         'usually huge, processing them may also take longer, '
-                        'sometimes substantially.')
+                        'sometimes substantially. By default merge logs are only '
+                        'used for files missing from regular commit logs.')
+
+parser.add_argument('--skip-missing', '-s',
+                    action="store_false", default=True, dest='missing',
+                    help='do not try to find missing files. If some files were '
+                        'not found in regular commit logs, by default it re-tries '
+                        'using merge commit logs for these files (if --merge was '
+                        'not used already). This option disables this behavior, '
+                        'which may slightly improve performance, but files '
+                        'found only in merge commits will not be updated.')
 
 parser.add_argument('pathspec',
                     nargs='*', default=[os.path.curdir],
                     help='only modify paths (dirs or files) matching PATHSPEC, '
-                        'relative to current directory.'
+                        'relative to current directory. '
                         'Default is to modify all non-ignored, tracked files.')
 
 parser.add_argument('--work-tree',
@@ -247,7 +253,7 @@ if filelist:
 
     # Try to find them in merge logs, if not done already
     # (usually HUGE, thus MUCH slower!)
-    if not args.merge:
+    if args.missing and not args.merge:
         filterlist = list(filelist)
         for i in range(0, len(filterlist), stepmissing):
             parselog(merge=True, filterlist=filterlist[i:i+stepmissing])
@@ -305,6 +311,17 @@ logger.info("{:13,} updated files".format(touches))
 #    1,484,567 log lines processed
 #      313,164 commits evaluated
 #       40,902 updated files
+
+#linux kernel (--skip-missing)
+#WARNING: not found in log: arch/arm/mach-sa1100/include/mach/reset.h
+#WARNING: not found in log: lib/raid6/unroll.awk
+#Statistics:
+#        51.88 seconds
+#    1,484,558 log lines processed
+#      313,161 commits evaluated
+#       40,902 total files
+#            2 missing files
+#       40,900 updated files
 
 #linux kernel (--merge)
 #       501.17 seconds
