@@ -65,9 +65,9 @@ parser.add_argument('--force', '-f',
                     help='forces execution on trees with uncommited changes.')
 
 parser.add_argument('pathspec',
-                    nargs='*', default=[],
-                    help='modify only paths (dirs or files) starting with PATHSPEC, '
-                        'relative to work tree root directory. '
+                    nargs='*', default=[os.path.curdir],
+                    help='only modify paths (dirs or files) matching PATHSPEC, '
+                        'relative to current directory.'
                         'Default is to modify all non-ignored, tracked files.')
 
 args = parser.parse_args()
@@ -100,22 +100,40 @@ except subprocess.CalledProcessError as e:
     # So we just...
     sys.exit(e.returncode)
 
-# Is current dir inside the work tree?
-if os.path.commonprefix([workdir, os.path.abspath(os.path.curdir)]) != workdir:
-    logger.critical("ERROR: current directory is not inside work tree")
-    sys.exit(1)
 
-# List all files in current directory
+# List files matching user pathspec, relative to current directory
 # git commands always print paths relative to work tree root
 filelist = set()
-for root, subdirs, files in os.walk(os.path.curdir):
-    if gitdir in [os.path.abspath(os.path.join(root, subdir))
-                  for subdir in subdirs]:
-        subdirs.remove(os.path.basename(gitdir))
+for path in args.pathspec:
 
-    for file in files:
+    # Normalize user input so ./doc = doc/ = doc/../doc/. = doc
+    path = os.path.normpath(path)
+
+    # Is path inside the work tree?
+    if os.path.commonprefix([workdir, os.path.abspath(path)]) != workdir:
+        logger.warn("WARNING: Skipping pathspec outside work tree: %s", path)
+        continue
+
+    # git does not care if it's a broken symlink, hence lexists
+    if not os.path.lexists(path):
+        logger.warn("WARNING: Skipping non-existing pathspec: %s", path)
+        continue
+
+    # file or symlink (to file, to dir or broken - git handles the same way)
+    if os.path.isfile(path) or os.path.islink(path):
         # Always add them relative to worktree root
-        filelist.add(os.path.relpath(os.path.join(root, file), workdir))
+        filelist.add(os.path.relpath(path, workdir))
+
+    # dir
+    else:
+        for root, subdirs, files in os.walk(path):
+            if gitdir in [os.path.abspath(os.path.join(root, subdir))
+                          for subdir in subdirs]:
+                subdirs.remove(os.path.basename(gitdir))
+
+            for file in files:
+                # Always add them relative to worktree root
+                filelist.add(os.path.relpath(os.path.join(root, file), workdir))
 
 totalfiles = files = len(filelist)
 logger.info("{:,} files to be processed in work dir".format(totalfiles))
