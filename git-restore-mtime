@@ -46,8 +46,6 @@ import logging as logger
 import argparse
 import time
 
-workdir = os.path.abspath(os.path.curdir)
-
 parser = argparse.ArgumentParser(
     description='Restore original modification time of files based on '
                 'the date of the most recent commit that modified them. '
@@ -88,12 +86,32 @@ lines = loglines = commits = totalfiles = \
 ignoredfiles = files = touches = errors = 0
 stepmissing = 100
 
-# List all files currently in work tree
+
+# First things first: Where and Who are we?
+try:
+    workdir, gitdir = subprocess.check_output(shlex.split(
+                    'git rev-parse --show-toplevel --git-dir')).split('\n')[:2]
+
+    workdir = os.path.abspath(workdir)
+    gitdir  = os.path.abspath(gitdir)
+
+except subprocess.CalledProcessError as e:
+    # rev-parse couldn't find git repo, and already informed user.
+    # So we just...
+    sys.exit(e.returncode)
+
+# Is current dir inside the work tree?
+if os.path.commonprefix([workdir, os.path.abspath(os.path.curdir)]) != workdir:
+    logger.critical("ERROR: current directory is not inside work tree")
+    sys.exit(1)
+
+# List all files in current directory
 # git commands always print paths relative to work tree root
 filelist = set()
-for root, subdirs, files in os.walk(workdir):
-    if '.git' in subdirs:
-        subdirs.remove('.git')
+for root, subdirs, files in os.walk(os.path.curdir):
+    if gitdir in [os.path.abspath(os.path.join(root, subdir))
+                  for subdir in subdirs]:
+        subdirs.remove(os.path.basename(gitdir))
 
     for file in files:
         # Always add them relative to worktree root
