@@ -32,8 +32,7 @@
 # git dir is "./.git"
 
 # TODO:
-# - allow --work-dir and --git-dir
-# - add --dirs (--directories?) option to also update dirs (any A or D file but not M)
+# - add --directories to also update dirs (any dir/file in log as A or D, not M)
 # - add --include-merge, --no-missing
 
 if __name__ != "__main__":
@@ -283,7 +282,7 @@ logger.info("{:13,} updated files".format(touches))
 #        6,005 updated files
 
 #linux kernel
-#       159.11 seconds
+#        59.11 seconds
 #    1,484,567 log lines processed
 #      313,164 commits evaluated
 #       40,902 updated files
