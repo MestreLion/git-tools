@@ -33,7 +33,7 @@
 
 # TODO:
 # - add --directories to also update dirs (any dir/file in log as A or D, not M)
-# - add --include-merge, --no-missing
+# - add --skip-missing
 
 if __name__ != "__main__":
     raise ImportError("%s should not be used as a module." % __name__)
@@ -61,6 +61,17 @@ parser.add_argument('--verbose', '-v',
 parser.add_argument('--force', '-f',
                     action="store_true",
                     help='force execution on trees with uncommited changes.')
+
+parser.add_argument('--merge', '-m',
+                    action="store_true",
+                    help='include merge commits. Leads to more recent mtimes '
+                        'and more files per commit, thus with the same mtime '
+                        '(which may or may not be what you want). Including '
+                        'merge commits may lead to less commits being evaluated '
+                        '(all files are found sooner), which improves performance, '
+                        'sometimes substantially. But since merge commits are '
+                        'usually huge, processing them may also take longer, '
+                        'sometimes substantially.')
 
 parser.add_argument('pathspec',
                     nargs='*', default=[os.path.curdir],
@@ -229,15 +240,17 @@ def parselog(merge=False, filterlist=[]):
 
     gitobj.terminate()
 
-parselog()
+parselog(args.merge)
 
 # Missing files
 if filelist:
 
-    # Try to find them in merge logs (usually HUGE, thus MUCH slower!)
-    filterlist = list(filelist)
-    for i in range(0, len(filterlist), stepmissing):
-        parselog(merge=True, filterlist=filterlist[i:i+stepmissing])
+    # Try to find them in merge logs, if not done already
+    # (usually HUGE, thus MUCH slower!)
+    if not args.merge:
+        filterlist = list(filelist)
+        for i in range(0, len(filterlist), stepmissing):
+            parselog(merge=True, filterlist=filterlist[i:i+stepmissing])
 
     # Still missing some?
     for file in filelist:
@@ -275,6 +288,12 @@ logger.info("{:13,} updated files".format(touches))
 #       24,217 commits evaluated
 #        2,495 updated files
 
+#git (--merge)
+#         0.19 seconds
+#        2,586 log lines processed
+#            3 commits evaluated
+#        2,495 updated files
+
 #wine
 #        13.53 seconds
 #      443,979 log lines processed
@@ -287,8 +306,8 @@ logger.info("{:13,} updated files".format(touches))
 #      313,164 commits evaluated
 #       40,902 updated files
 
-#linux kernel (with --include-merge)
-#     6,460.88 seconds (1h48m)
+#linux kernel (--merge)
+#       501.17 seconds
 #   34,495,300 log lines processed
 #      238,711 commits evaluated
 #       40,902 updated files
