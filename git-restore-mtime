@@ -69,7 +69,21 @@ parser.add_argument('pathspec',
                         'relative to current directory.'
                         'Default is to modify all non-ignored, tracked files.')
 
+parser.add_argument('--work-tree',
+                    dest='workdir',
+                    help='specify where the work tree is. '
+                        'Default for most repositories is current directory.')
+
+parser.add_argument('--git-dir',
+                    dest='gitdir',
+                    help='specify where the git repository is. '
+                        'Default for most repositories <work-tree>/.git')
+
 args = parser.parse_args()
+
+gitcmd = ['git']
+if args.workdir: gitcmd.append("--work-tree=%s" % args.workdir)
+if args.gitdir : gitcmd.append("--git-dir=%s"   % args.gitdir)
 
 if   args.verbose: level = logger.DEBUG
 elif args.quiet:   level = logger.WARN
@@ -130,6 +144,9 @@ for path in args.pathspec:
                           for subdir in subdirs]:
                 subdirs.remove(os.path.basename(gitdir))
 
+            if os.path.abspath(root) == workdir and '.git' in files:
+                files.remove('.git')
+
             for file in files:
                 # Always add them relative to worktree root
                 filelist.add(os.path.relpath(os.path.join(root, file), workdir))
@@ -140,9 +157,9 @@ logger.info("{:,} files to be processed in work dir".format(totalfiles))
 
 # Discard untracked and ignored files
 ignoredlist = set()
-gitsts = subprocess.Popen(shlex.split('git status --porcelain --ignored'),
+gitobj = subprocess.Popen(gitcmd + shlex.split('status --porcelain --ignored'),
                           stdout=subprocess.PIPE)
-for line in gitsts.stdout:
+for line in gitobj.stdout:
     status = line[:2]
     filespec = line[3:-1]
     if status in ['??', '!!']: # also safe to ignore: 'A ', ' M'
@@ -160,7 +177,10 @@ for line in gitsts.stdout:
          "This could lead to undesirable results for modified files.\n"
          "Please, commit your changes (or use --force) and try again.\n"
          "Aborting")
+        gitobj.kill()
         sys.exit(1)
+
+gitobj.terminate()
 
 if ignoredfiles:
     filelist -= ignoredlist
@@ -173,11 +193,11 @@ logger.debug("Line #\tLog #\tFiles\tmtime\tFile")
 def parselog(merge=False, filterlist=[]):
     global loglines, files, touches, errors, commits
 
-    gitlog = subprocess.Popen(shlex.split('git whatchanged --pretty=%at') +
+    gitobj = subprocess.Popen(gitcmd + shlex.split('whatchanged --pretty=%at') +
                               (['-m'] if merge else []) +
                               filterlist,
                               stdout=subprocess.PIPE)
-    for line in gitlog.stdout:
+    for line in gitobj.stdout:
         loglines += 1
         line = line.strip()
 
@@ -207,6 +227,8 @@ def parselog(merge=False, filterlist=[]):
         # All files done?
         if not files:
             break
+
+    gitobj.terminate()
 
 parselog()
 
