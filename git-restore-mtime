@@ -34,7 +34,6 @@
 # TODO:
 # - allow --work-dir and --git-dir
 # - add --dirs (--directories?) option to also update dirs (any A or D file but not M)
-# - do the pathspec filter!
 # - add --include-merge, --no-missing
 
 if __name__ != "__main__":
@@ -53,7 +52,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('--quiet', '-q',
                     action="store_true",
-                    help='suppress all informative messages and summary statistics.')
+                    help='suppress informative messages and summary statistics.')
 
 parser.add_argument('--verbose', '-v',
                     action="store_true",
@@ -62,7 +61,7 @@ parser.add_argument('--verbose', '-v',
 
 parser.add_argument('--force', '-f',
                     action="store_true",
-                    help='forces execution on trees with uncommited changes.')
+                    help='force execution on trees with uncommited changes.')
 
 parser.add_argument('pathspec',
                     nargs='*', default=[os.path.curdir],
@@ -158,9 +157,9 @@ for line in gitsts.stdout:
     elif not args.force:
         logger.critical(
          "ERROR: There are local changes in the working directory.\n"
-         "This could lead to unexpected results, specially when renaming or deleting files.\n"
+         "This could lead to undesirable results for modified files.\n"
          "Please, commit your changes (or use --force) and try again.\n"
-         "Aborting\n")
+         "Aborting")
         sys.exit(1)
 
 if ignoredfiles:
@@ -208,6 +207,7 @@ def parselog(merge=False, filterlist=[]):
         # All files done?
         if not files:
             break
+
 parselog()
 
 # Missing files
@@ -224,7 +224,7 @@ if filelist:
 
 
 # Final statistics
-# TODO: use git-log --before=mtime to show how many log entries were skipped
+# TODO: use git-log --before=mtime to brag about skipped log entries
 logger.info(
     "Statistics:\n"
     "{:13,.2f} seconds\n"
