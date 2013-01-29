@@ -111,8 +111,6 @@ def parselog(merge=False):
         if not filelist:
             break
 
-    gitobj.terminate()
-
 parselog(args.merge)
 
 

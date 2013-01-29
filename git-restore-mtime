@@ -196,8 +196,6 @@ for line in gitobj.stdout:
         gitobj.kill()
         sys.exit(1)
 
-gitobj.terminate()
-
 if ignoredfiles:
     filelist -= ignoredlist
     logger.info("{:,} files to process after ignoring {:,}"
@@ -243,8 +241,6 @@ def parselog(merge=False, filterlist=[]):
         # All files done?
         if not files:
             break
-
-    gitobj.terminate()
 
 parselog(args.merge)
 
