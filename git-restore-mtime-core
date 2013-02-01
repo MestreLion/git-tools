@@ -81,7 +81,7 @@ for path in args.pathspec:
 
 
 # Process the log until all files are 'touched'
-def parselog(merge, filterlist):
+def parselog(merge=False, filterlist=[]):
     gitobj = subprocess.Popen(shlex.split('git whatchanged --pretty=%at') +
                               (['-m'] if merge else []) + filterlist,
                               stdout=subprocess.PIPE)
@@ -111,7 +111,7 @@ def parselog(merge, filterlist):
         if not filelist:
             break
 
-parselog(args.merge, filterlist=list())
+parselog(args.merge)
 
 
 # Missing files
