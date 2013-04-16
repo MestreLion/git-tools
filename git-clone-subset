@@ -72,7 +72,7 @@ usage() {
 	    Pattern Examples:
 	       "*.png"
 	       "*.png|*icon*"
-	       "src/*.c|src/*.h"
+	       "*.h|src/|lib"
 
 	Limitations:
 
@@ -82,6 +82,11 @@ usage() {
 	  "currentname|oldname|initialname". As a side efect, if a different
 	  file has taken place of an old name, it will be preserved too, and
 	  there is no way around this using this tool.
+
+	- There is no (easy) way to keep some files in a dir: using 'dir/foo*'
+	  as pattern will not work. So keep the whole dir and remove files
+	  afterwards, using git filter-branch and a (quite complex) combination
+	  of cloning, remote add, rebases, etc.
 
 	- Pattern matching is quite limited, and many of bash's escaping and
 	  quoting does not work properly when pattern is expanded inside !().
