@@ -130,7 +130,7 @@ git filter-branch --prune-empty --tree-filter \
 while read -r root; do
 
 	# Test if it's an non-empty commit
-	if [[ "$(git ls-files "$root")" ]]; then continue; fi
+	if [[ "$(git ls-tree "$root")" ]]; then continue; fi
 
 	# Now "remove" it by deleting its child's parent reference
 	git filter-branch --force --parent-filter "sed 's/-p $root//'" -- --all
