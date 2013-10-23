@@ -178,10 +178,15 @@ gitobj = subprocess.Popen(gitcmd + shlex.split('status --porcelain --ignored'),
 for line in gitobj.stdout:
     status = line[:2]
     filespec = line[3:-1]
+
+    # Make sure the slash matches the os; for Windows we need a backslash
+    if not os.sep == '/':
+        filespec = filespec.replace('/', os.sep)
+        
     if status in ['??', '!!']: # also safe to ignore: 'A ', ' M'
         # filespec can be a dir, so we must iterate on filelist
         for file in filelist:
-            if ( (filespec.endswith('/') and  file.startswith(filespec)) or
+            if ( (filespec.endswith(os.sep) and  file.startswith(filespec)) or
                  (file == filespec) ):
                 logger.debug("Ignoring: %s", file)
                 ignoredlist.add(file)
@@ -221,6 +226,11 @@ def parselog(merge=False, filterlist=[]):
         # File line
         if line.startswith(':'):
             file = line.split('\t')[-1]
+
+            # Make sure the slash matches the os; for Windows we need a backslash
+            if not os.sep == '/':
+                file = file.replace('/',os.sep)
+
             if file in filelist:
                 logger.debug("%d\t%d\t%d\t%s\t%s",
                              loglines, commits, files,
