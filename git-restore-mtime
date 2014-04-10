@@ -27,9 +27,6 @@
 
 # By default ignores all ignored and untracked files, and also refuses to work
 # on trees with uncommited changes.
-#
-# TODO:
-# - add --directories to also update dirs (any dir/file in log as A or D, not M)
 
 if __name__ != "__main__":
     raise ImportError("%s should not be used as a module." % __name__)
@@ -78,6 +75,12 @@ parser.add_argument('--skip-missing', '-s',
                         'not used already). This option disables this behavior, '
                         'which may slightly improve performance, but files '
                         'found only in merge commits will not be updated.')
+
+parser.add_argument('--directories', '-d',
+                    action="store_true", default=False, dest='dirs',
+                    help='also update directory mtime for files created, '
+                        'renamed or deleted in it. Note: modifying a file '
+                        'will not update its directory mtime.')
 
 parser.add_argument('--test', '-t',
                     action="store_true", default=False, dest='test',
@@ -137,6 +140,7 @@ except subprocess.CalledProcessError as e:
 # List files matching user pathspec, relative to current directory
 # git commands always print paths relative to work tree root
 filelist = set()
+dirlist  = set()
 for path in args.pathspec:
 
     # Normalize user input so ./doc = doc/ = doc/../doc/. = doc
@@ -167,10 +171,17 @@ for path in args.pathspec:
             if os.path.abspath(root) == workdir and '.git' in files:
                 files.remove('.git')
 
+            if args.dirs:
+                dir = os.path.relpath(root, workdir)
+                if dir == '.':
+                    dir = ''
+                dirlist.add(dir)
+
             for file in files:
                 # Always add them relative to worktree root
                 filelist.add(os.path.relpath(os.path.join(root, file), workdir))
 
+totaldirs  = dirs  = len(dirlist)
 totalfiles = files = len(filelist)
 logger.info("{:,} files to be processed in work dir".format(totalfiles))
 
@@ -215,7 +226,7 @@ if ignoredfiles:
 # Process the log until all files are 'touched'
 logger.debug("Line #\tLog #\tFiles\tmtime\tFile")
 def parselog(merge=False, filterlist=[]):
-    global loglines, files, touches, errors, commits
+    global loglines, dirs, files, touches, errors, commits
 
     gitobj = subprocess.Popen(gitcmd + shlex.split('whatchanged --pretty=%at') +
                               (['-m'] if merge else []) +
@@ -230,7 +241,7 @@ def parselog(merge=False, filterlist=[]):
 
         # File line
         if line.startswith(':'):
-            file = line.split('\t')[-1]
+            status, file = line.split('\t')
 
             # Make sure the slash matches the os; for Windows we need a backslash
             if not os.sep == '/':
@@ -249,6 +260,21 @@ def parselog(merge=False, filterlist=[]):
                 except Exception as e:
                     logger.error("ERROR: %s\n", e)
                     errors += 1
+
+            if args.dirs:
+                dir = os.path.dirname(file)
+                if status[-1] in ['A', 'D'] and dir in dirlist:
+                    logger.debug("%d\t%d\t-\t%s\t%s",
+                                 loglines, commits,
+                                 time.ctime(mtime), dir)
+                    dirlist.remove(dir)
+                    try:
+                        if not args.test:
+                            os.utime(os.path.join(workdir, dir), (mtime, mtime))
+                        dirs -= 1
+                    except Exception as e:
+                        logger.error("ERROR: %s\n", e)
+
         # Date line
         else:
             commits += 1
@@ -291,6 +317,9 @@ if files:        logger.info("{:13,} missing files".format(files))
 if errors:       logger.info("{:13,} update errors".format(errors))
 
 logger.info("{:13,} updated files".format(touches))
+
+if args.dirs:
+    logger.info("{:13,} updated directories".format(totaldirs - dirs))
 
 if args.test:
         logger.info("TEST RUN - No files modified!")
