@@ -37,6 +37,13 @@ import logging as logger
 import argparse
 import time
 
+if sys.version_info[:2] >= (3, 0):
+    def text(s):
+        return s.decode('utf-8')
+else:
+    def text(s):
+        return s
+
 parser = argparse.ArgumentParser(
     description='Restore original modification time of files based on '
                 'the date of the most recent commit that modified them. '
@@ -125,8 +132,8 @@ stepmissing = 100
 
 # First things first: Where and Who are we?
 try:
-    workdir, gitdir = subprocess.check_output(gitcmd + shlex.split(
-                    'rev-parse --show-toplevel --git-dir')).split('\n')[:2]
+    workdir, gitdir = text(subprocess.check_output(gitcmd + shlex.split(
+                    'rev-parse --show-toplevel --git-dir'))).split('\n')[:2]
 
     workdir = os.path.abspath(workdir)
     gitdir  = os.path.abspath(gitdir)
@@ -192,13 +199,14 @@ gitobj = subprocess.Popen(gitcmd + shlex.split('status --porcelain --ignored') +
                           ['--'] + args.pathspec,
                           stdout=subprocess.PIPE)
 for line in gitobj.stdout:
+    line = text(line.strip())
     status = line[:2]
     filespec = line[3:-1]
 
     # Make sure the slash matches the os; for Windows we need a backslash
     if not os.sep == '/':
         filespec = filespec.replace('/', os.sep)
-        
+
     if status in ['??', '!!']: # also safe to ignore: 'A ', ' M'
         # filespec can be a dir, so we must iterate on filelist
         for file in filelist:
@@ -234,7 +242,7 @@ def parselog(merge=False, filterlist=[]):
                               stdout=subprocess.PIPE)
     for line in gitobj.stdout:
         loglines += 1
-        line = line.strip()
+        line = text(line.strip())
 
         # Blank line between Date and list of files
         if not line: continue
@@ -278,11 +286,17 @@ def parselog(merge=False, filterlist=[]):
         # Date line
         else:
             commits += 1
-            mtime = long(line)
+            mtime = int(line)
 
         # All files done?
         if not files:
             break
+
+    try:
+        gitobj.terminate()
+    except OSError:
+        pass
+
 
 parselog(args.merge, args.pathspec)
 
