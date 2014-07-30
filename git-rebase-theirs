@@ -92,13 +92,13 @@ while (( $# )); do
 done
 files+=( "$@" )
 
-(( "${#files[@]}" )) || missing "FILE"
+if ! (( "${#files[@]}" )); then missing "FILE"; fi
 
 ext=${suffix:-$ext}
 
 for file in "${files[@]}"; do
 
-	[[ -f "$file" ]] || skip "not a valid file"
+	if ! [[ -f "$file" ]]; then skip "not a valid file"; fi
 
 	if ((inplace)); then
 		outfile=$(mktemp) || skip "could not create temporary file"
@@ -114,15 +114,15 @@ for file in "${files[@]}"; do
 
 	exec 3>&-
 
-	((inplace)) || continue
+	if ! ((inplace)); then continue; fi
 
 	diff "$file" "$outfile" >/dev/null && skip "no conflict markers found"
 
-	((backup)) && { cp "$file" "$file$ext" || skip "could not backup" ; }
+	if ((backup)); then cp "$file" "$file$ext" || skip "could not backup"; fi
 
 	cp "$outfile" "$file" || skip "could not edit in-place"
 	rm -f -- "$outfile"
 	trap - EXIT
 
-	((verbose)) && message "resolved ${file}"
+	if ((verbose)); then message "resolved ${file}"; fi
 done
