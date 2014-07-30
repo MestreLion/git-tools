@@ -121,6 +121,8 @@ for file in "${files[@]}"; do
 	((backup)) && { cp "$file" "$file$ext" || skip "could not backup" ; }
 
 	cp "$outfile" "$file" || skip "could not edit in-place"
+	rm -f -- "$outfile"
+	trap - EXIT
 
 	((verbose)) && message "resolved ${file}"
 done
