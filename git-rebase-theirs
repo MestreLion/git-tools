@@ -101,7 +101,7 @@ for file in "${files[@]}"; do
 	[[ -f "$file" ]] || skip "not a valid file"
 
 	if ((inplace)); then
-		outfile=$(tempfile) || skip "could not create temporary file"
+		outfile=$(mktemp) || skip "could not create temporary file"
 		trap "rm -f -- '$outfile'" EXIT
 		cp "$file" "$outfile" || skip
 		exec 3>"$outfile"
