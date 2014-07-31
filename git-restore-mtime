@@ -83,10 +83,10 @@ parser.add_argument('--skip-missing', '-s',
                         'which may slightly improve performance, but files '
                         'found only in merge commits will not be updated.')
 
-parser.add_argument('--directories', '-d',
-                    action="store_true", default=False, dest='dirs',
-                    help='also update directory mtime for files created, '
-                        'renamed or deleted in it. Note: modifying a file '
+parser.add_argument('--no-directories', '-D',
+                    action="store_false", default=True, dest='dirs',
+                    help='do not update directory mtime for files created, '
+                        'renamed or deleted in it. Note: just modifying a file '
                         'will not update its directory mtime.')
 
 parser.add_argument('--test', '-t',
