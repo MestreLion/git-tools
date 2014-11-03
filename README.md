@@ -7,9 +7,9 @@ Assorted git-related scripts and tools
 Requirements
 ------------
 
-- **Git** (duh!). Tested in v1.7,9.5 and prior versions since 2010
+- **Git** (duh!). Tested in v1.7.9.5 and prior versions since 2010
 - **Python** (for `git-restore-mtime`). Tested in Python 2.7.4, also works in Python 3
-- **Bash** (for all other tools)
+- **Bash** (for all other tools). Tested in Bash 4, some may work in Bash 3 or even `sh`
 
 Bash and Python are already installed by default in virtually all GNU/Linux distros. And you probably already have Git if you are interested in these tools. But if somehow you don't, the command to install dependencies for Debian-like distros (like Ubuntu/Mint) is:
 
@@ -51,7 +51,7 @@ Examples:
 	bug/128  -> bugfix/128
 	bug_test -> bugfix_test
 
-	$ git-rename-branches bug bugfix
+	$ git-rename-branches ma backup/ma
 	master -> backup/master
 	main   -> backup/main
 
@@ -73,15 +73,15 @@ git-find-uncommited-repos
 
 *Recursively list repos with uncommited changes*
 
-Recursively finds all git repositories in the given directory(es), runs `git status` on them, and prints the location of reposities with uncommited changes. The tool I definately use the most.
+Recursively finds all git repositories in the given directory(es), runs `git status` on them, and prints the location of reposities with uncommited changes. The tool I definitely use the most.
 
 
 git-rebase-theirs
 -----------------
 
-*Resolve rebase conflicts and failed cherry-picks by favoring '*theirs*' version*
+*Resolve rebase conflicts and failed cherry-picks by favoring 'theirs' version*
 
-When using git rebase, conflicts are usually wanted to be resolved by favoring the `working branch` version (the branch being rebased, *'theirs'* side in a rebase), instead of the `upstream` version (the base branch, '*ours*' side). But `git rebase --strategy -X theirs` is only available from git 1.7.3. For older versions, `git-rebase-theirs` is the solution. And despite the name, it's also useful for fixing failed cherry-picks
+When using git rebase, conflicts are usually wanted to be resolved by favoring the `working branch` version (the branch being rebased, *'theirs'* side in a rebase), instead of the `upstream` version (the base branch, *'ours'* side). But `git rebase --strategy -X theirs` is only available from git 1.7.3. For older versions, `git-rebase-theirs` is the solution. And despite the name, it's also useful for fixing failed cherry-picks
 
 
 git-restore-mtime
