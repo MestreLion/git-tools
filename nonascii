@@ -1,0 +1,12 @@
+#!/bin/sh
+mkdir bugtest1
+cd bugtest1/
+git init .
+touch Haus.txt
+touch Häuser.txt
+git config hooks.allownonascii true
+git add Haus.txt Häuser.txt
+git commit -m "commit 1"
+git config hooks.allownonascii false
+
+../git-restore-mtime --verbose --skip-missing
