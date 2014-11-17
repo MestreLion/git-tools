@@ -255,6 +255,9 @@ def parselog(merge=False, filterlist=[]):
             if not os.sep == '/':
                 file = file.replace('/',os.sep)
 
+            if file.startswith('"'):
+                file = file[1:-1].decode("string-escape")
+
             if file in filelist:
                 logger.debug("%d\t%d\t%d\t%s\t%s",
                              loglines, commits, files,
