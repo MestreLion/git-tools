@@ -36,6 +36,7 @@ import sys, os.path
 import logging as logger
 import argparse
 import time
+import locale
 
 if sys.version_info[:2] >= (3, 0):
     def text(s):
@@ -230,6 +231,10 @@ if ignoredfiles:
     logger.info("{:,} files to process after ignoring {:,}"
                 "".format(files, ignoredfiles))
 
+logger.debug("encoding: %r", locale.getpreferredencoding())
+for testfile in filelist:
+    logger.debug("%r\t%r", testfile, text(testfile))
+
 
 # Process the log until all files are 'touched'
 logger.debug("Line #\tLog #\tFiles\tmtime\tFile")
@@ -257,6 +262,8 @@ def parselog(merge=False, filterlist=[]):
 
             if file.startswith('"'):
                 file = file[1:-1].decode("string-escape")
+
+            logger.debug("file: %r", file)
 
             if file in filelist:
                 logger.debug("%d\t%d\t%d\t%s\t%s",
