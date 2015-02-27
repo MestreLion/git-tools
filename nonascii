@@ -1,4 +1,5 @@
 #!/bin/sh
+rm -rf bugtest1
 mkdir bugtest1
 cd bugtest1/
 git init .

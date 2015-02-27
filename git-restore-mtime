@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # git-restore-mtime - Change mtime of files based on commit date of last change
@@ -40,10 +40,25 @@ import locale
 
 if sys.version_info[:2] >= (3, 0):
     def text(s):
-        return s.decode('utf-8')
+        if isinstance(s, str):
+            return s
+        else:
+            return s.decode('utf-8')
+
+    def escape(s):
+        logger.debug("original: %r", s)
+        result = s.encode('utf-8')
+        logger.debug("encode: %r", result)
+        result = result.decode('unicode_escape')
+        logger.debug("unicode: %r", result)
+        return result
+
 else:
     def text(s):
         return s
+
+    def escape(s):
+        return s.decode("string-escape")
 
 parser = argparse.ArgumentParser(
     description='Restore original modification time of files based on '
@@ -261,7 +276,7 @@ def parselog(merge=False, filterlist=[]):
                 file = file.replace('/',os.sep)
 
             if file.startswith('"'):
-                file = file[1:-1].decode("string-escape")
+                file = escape(file[1:-1])
 
             logger.debug("file: %r", file)
 
