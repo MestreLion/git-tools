@@ -201,7 +201,7 @@ gitobj = subprocess.Popen(gitcmd + shlex.split('status --porcelain --ignored') +
 for line in gitobj.stdout:
     line = text(line.strip())
     status = line[:2]
-    filespec = line[3:-1]
+    filespec = line[3:]
 
     # Make sure the slash matches the os; for Windows we need a backslash
     if not os.sep == '/':
