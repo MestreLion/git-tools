@@ -123,7 +123,7 @@ logger.basicConfig(level=level, format='%(message)s')
 
 
 # UI done, it's show time!
-start = time.time() # yes, Wall time. CPU time is not realistic for users.
+start = time.time()  # yes, Wall time. CPU time is not realistic for users.
 
 lines = loglines = commits = totalfiles = \
 ignoredfiles = files = touches = errors = 0

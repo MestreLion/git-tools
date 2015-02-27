@@ -121,12 +121,12 @@ If you find a bug or have any enhacement request, please to open a [new issue](h
 Written by
 ----------
 
-Rodigo Silva (MestreLion) <linux@rodrigosilva.com>
+Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
 
 Licenses and Copyright
 ----------------------
 
-Copyright (C) 2012 Rodigo Silva (MestreLion) <linux@rodrigosilva.com>.
+Copyright (C) 2012 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>.
 
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
 
