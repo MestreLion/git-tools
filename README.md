@@ -61,7 +61,7 @@ git-clone-subset
 
 *Clones a subset of a git repository*
 
-Uses git clone and git filter-branch to remove from the clone all files but the ones requested, along with their associated commit history.
+Uses `git clone` and `git filter-branch` to remove from the clone all files but the ones requested, along with their associated commit history.
 
 Clones a `repository` into a `destination` directory and runs on the clone `git filter-branch --prune-empty --tree-filter 'git rm ...' -- --all` to prune from history all files except the ones matching a `pattern`, effectively creating a clone with a subset of files (and history) of the original repository.
 
@@ -81,7 +81,7 @@ git-rebase-theirs
 
 *Resolve rebase conflicts and failed cherry-picks by favoring 'theirs' version*
 
-When using git rebase, conflicts are usually wanted to be resolved by favoring the `working branch` version (the branch being rebased, *'theirs'* side in a rebase), instead of the `upstream` version (the base branch, *'ours'* side). But `git rebase --strategy -X theirs` is only available from git 1.7.3. For older versions, `git-rebase-theirs` is the solution. And despite the name, it's also useful for fixing failed cherry-picks
+When using `git rebase`, conflicts are usually wanted to be resolved by favoring the `working branch` version (the branch being rebased, *'theirs'* side in a rebase), instead of the `upstream` version (the base branch, *'ours'* side). But `git rebase --strategy -X theirs` is only available from git 1.7.3. For older versions, `git-rebase-theirs` is the solution. And despite the name, it's also useful for fixing failed cherry-picks
 
 
 git-restore-mtime
@@ -89,9 +89,9 @@ git-restore-mtime
 
 *Restore original modification time of files based on the date of the most recent commit that modified them*
 
-Probaly the most popular and useful tool.
+Probably the most popular and useful tool.
 
-Git, unlike other version control systems, does not preserve the original timestamp of commited files. Whenever repositories are cloned or branches/files are checked out, file timestamp is reset to current date. While this behavior has its justifications (notably when using `make` to compile software), sometimes it is desirable to restore the original modification date of a file (for example, when generating release tarballs). As git does not provide any way to do that, `git-restore-mtime` tries to workaround this limitation.
+Git, unlike other version control systems, does not preserve the original timestamp of commited files. Whenever repositories are cloned, or branches/files are checked out, file timestamps are reset to the current date. While this behavior has its justifications (notably when using `make` to compile software), sometimes it is desirable to restore the original modification date of a file (for example, when generating release tarballs). As git does not provide any way to do that, `git-restore-mtime` tries to workaround this limitation.
 
 For more information and background, see http://stackoverflow.com/a/13284229/624066
 
