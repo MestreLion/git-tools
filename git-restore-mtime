@@ -249,7 +249,11 @@ def parselog(merge=False, filterlist=[]):
 
         # File line
         if line.startswith(':'):
-            status, file = line.split('\t')
+            # If line describes a rename, linetok has three tokens, otherwise
+            # two.
+            linetok = line.split('\t')
+            status = linetok[0]
+            file = linetok[-1]
 
             # Make sure the slash matches the os; for Windows we need a backslash
             if not os.sep == '/':
