@@ -144,6 +144,14 @@ except subprocess.CalledProcessError as e:
     sys.exit(e.returncode)
 
 
+# Get the files managed by git
+lsfileslist = set()
+gitobj = subprocess.Popen(gitcmd + shlex.split('ls-files --full-name') +
+                          ['--'] + args.pathspec,
+                          stdout=subprocess.PIPE)
+for line in gitobj.stdout:
+    lsfileslist.add(os.path.relpath(line.strip(), workdir))
+
 # List files matching user pathspec, relative to current directory
 # git commands always print paths relative to work tree root
 filelist = set()
@@ -187,6 +195,9 @@ for path in args.pathspec:
             for file in files:
                 # Always add them relative to worktree root
                 filelist.add(os.path.relpath(os.path.join(root, file), workdir))
+
+filelist &= lsfileslist
+dirlist &= lsfileslist
 
 totaldirs  = dirs  = len(dirlist)
 totalfiles = files = len(filelist)
