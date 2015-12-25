@@ -197,7 +197,6 @@ for path in args.pathspec:
                 filelist.add(os.path.relpath(os.path.join(root, file), workdir))
 
 filelist &= lsfileslist
-dirlist &= lsfileslist
 
 totaldirs  = dirs  = len(dirlist)
 totalfiles = files = len(filelist)
