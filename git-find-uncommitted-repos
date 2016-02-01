@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# git-find-uncommited-repos - recursively list repos with uncommited changes
+# git-find-uncommitted-repos - recursively list repos with uncommitted changes
 #
 #    Copyright (C) 2012 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
 #
@@ -18,7 +18,7 @@
 #    along with this program. See <http://www.gnu.org/licenses/gpl.html>
 #
 # Recursively finds all git repositories in each PATH argument, runs git status
-# on them, and prints the location of reposities with uncommited changes
+# on them, and prints the location of reposities with uncommitted changes
 # Only works for conventional repositories where git dir is "<work-tree>/.git"
 
 myname="${0##*/}"
@@ -39,13 +39,13 @@ usage() {
 	fi
 	cat <<-USAGE
 
-	Recursively list repositories with uncommited changes
+	Recursively list repositories with uncommitted changes
 
 	Options:
 	  -h|--help      - show this page.
 	  -v|--verbose   - print more details about what is being done.
 
-	  -u|--untracked - count untracked files as 'uncommited'
+	  -u|--untracked - count untracked files as 'uncommitted'
 
 	  DIR...         - the directories to scan, or current directory if none
 	                   is specified.
@@ -73,6 +73,6 @@ dirs+=( "$@" )
 
 while read -r repo; do
 	repo="$(dirname "$repo")"
-	uncommited=$(cd "$repo"; git status --short --untracked-files="$untracked")
-	[[ "$uncommited" ]] && echo "$repo"
+	uncommitted=$(cd "$repo"; git status --short --untracked-files="$untracked")
+	[[ "$uncommitted" ]] && echo "$repo"
 done < <(find "${dirs[@]}" -name .git -type d)

@@ -68,12 +68,12 @@ Clones a `repository` into a `destination` directory and runs on the clone `git 
 Useful for creating a new repository out of a set of files from another repository, migrating (only) their associated history. Very similar to what `git filter-branch --subdirectory-filter` does, but for a file pattern instead of just a single directory.
 
 
-git-find-uncommited-repos
--------------------------
+git-find-uncommitted-repos
+--------------------------
 
-*Recursively list repos with uncommited changes*
+*Recursively list repos with uncommitted changes*
 
-Recursively finds all git repositories in the given directory(es), runs `git status` on them, and prints the location of reposities with uncommited changes. The tool I definitely use the most.
+Recursively finds all git repositories in the given directory(es), runs `git status` on them, and prints the location of reposities with uncommitted changes. The tool I definitely use the most.
 
 
 git-rebase-theirs

@@ -26,7 +26,7 @@
 # (assuming the actual modification date and its commit date are close)
 
 # By default ignores all ignored and untracked files, and also refuses to work
-# on trees with uncommited changes.
+# on trees with uncommitted changes.
 
 if __name__ != "__main__":
     raise ImportError("%s should not be used as a module." % __name__)
@@ -60,7 +60,7 @@ parser.add_argument('--verbose', '-v',
 
 parser.add_argument('--force', '-f',
                     action="store_true",
-                    help='force execution on trees with uncommited changes.')
+                    help='force execution on trees with uncommitted changes.')
 
 parser.add_argument('--merge', '-m',
                     action="store_true",
