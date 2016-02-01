@@ -1,0 +1,30 @@
+.TH GIT-FIND-UNCOMMITTED-REPOS 1 2016-01-31
+.\" For nroff, turn off justification.  Always turn off hyphenation; it makes
+.\" way too many mistakes in technical documents.
+.if n .ad l
+.nh
+.SH NAME
+git-find-uncommitted-repos \-
+Recursively list repositories with uncommitted changes
+.SH SYNOPSIS
+.B git-find-uncommitted-repos
+.RI [ DIR ...]
+.SH DESCRIPTION
+Recursively list repositories with uncommitted changes.
+.SH OPTIONS
+.TP 8
+.BR \-h , \ \-\-help
+show usage information.
+.TP 8
+.BR \-v , \ \-\-verbose
+print more details about what is being done.
+.TP 8
+.BR \-u , \ \-\-untracked
+count untracked files as 'uncommitted'
+.TP 8
+.IR DIR ...
+the directories to scan, or current directory if none is specified.
+.SH SEE ALSO
+.B https://github.com/MestreLion/git-tools
+.SH AUTHOR
+Rodrigo Silva (MestreLion) linux@rodrigosilva.com

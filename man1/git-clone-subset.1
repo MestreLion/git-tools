@@ -1,0 +1,87 @@
+.TH GIT-CLONE-SUBSET 1 2016-01-31
+.\" For nroff, turn off justification.  Always turn off hyphenation; it makes
+.\" way too many mistakes in technical documents.
+.if n .ad l
+.nh
+.SH NAME
+git-clone-subset \-
+Clones a subset of a git repository
+.SH SYNOPSIS
+.B git-clone-subset
+.RI [ options ]
+.I repository destination-dir pattern
+.SH DESCRIPTION
+Clones a
+.I repository
+into a
+.I destination-dir
+and runs on the clone
+.br
+.B git filter-branch --prune-empty --tree-filter 'git rm ...' -- --all
+.br
+to prune from history all files except the ones matching
+.IR pattern ,
+effectively creating a clone with a subset of files (and history) of the
+original repository.
+.sp
+Useful for creating a new repository out of a set of files from another
+repository, migrating (only) their associated history. Very similar to
+what
+.br
+.B git filter-branch --subdirectory-filter
+.br
+does, but for a file
+pattern instead of just a single directory.
+.SH OPTIONS
+.TP 8
+.BR \-h , \ \-\-help
+show usage information.
+.TP 8
+.I repository
+URL or local path to the git repository to be cloned.
+.TP 8
+.I destination-dir
+Directory to create the clone. Same rules for git-clone applies: it
+will be created if it does not exist and it must be empty otherwise.
+But, unlike git-clone, this argument is not optional: git-clone uses
+several rules to determine the "Humane" dir name of a cloned repo,
+and git-clone-subset will not risk parse its output, let alone
+predict the chosen name.
+.TP 8
+.I pattern
+Glob pattern to match the desired files/dirs. It will be ultimately
+evaluated by a call to bash, NOT git or sh, using extended glob
+'!(<pattern>)' rule. Quote it or escape it on command line, so it
+does not get evaluated prematurely by your current shell. Only a
+single pattern is allowed: if more are required, use extglob's "|"
+syntax. Globs will be evaluated with bash's shopt dotglob set, so
+beware. Patterns should not contain spaces or special chars like
+" ' $ ( ) { } `, not even quoted or escaped, since that might
+interphere with the !() syntax after pattern expansion.
+.sp
+Pattern Examples:
+.sp
+"*.png"
+.br
+"*.png|*icon*"
+.br
+"*.h|src/|lib"
+.SH LIMITATIONS
+Renames are NOT followed. As a workaround, list the rename history with
+'git log --follow --name-status --format='%H' -- file | grep "^[RAD]"'
+and include all multiple names of a file in the pattern, as in
+"currentname|oldname|initialname". As a side efect, if a different
+file has taken place of an old name, it will be preserved too, and
+there is no way around this using this tool.
+.sp
+There is no (easy) way to keep some files in a dir: using 'dir/foo*'
+as pattern will not work. So keep the whole dir and remove files
+afterwards, using git filter-branch and a (quite complex) combination
+of cloning, remote add, rebases, etc.
+.sp
+Pattern matching is quite limited, and many of bash's escaping and
+quoting does not work properly when pattern is expanded inside !().
+.SH SEE ALSO
+.B https://github.com/MestreLion/git-tools
+.SH AUTHOR
+Rodrigo Silva (MestreLion) linux@rodrigosilva.com

@@ -1,0 +1,63 @@
+.TH GIT-STRIP-MERGE 1 2016-01-31
+.\" For nroff, turn off justification.  Always turn off hyphenation; it makes
+.\" way too many mistakes in technical documents.
+.if n .ad l
+.nh
+.SH NAME
+git-strip-merge \-
+A git-merge wrapper that deletes files on a "foreign" branch before merging
+.SH SYNOPSIS
+.B git-strip-merge
+.RI [ git-merge\ options ]
+.RB [ -M
+.IR <commitmsg> ]
+.I <branch>
+.IR FILE ...
+.SH DESCRIPTION
+git-merge that deletes files on "foreign" <branch> before merging.
+.sp
+Useful for ignoring a folder in <branch> before merging it with
+current branch. Works by deleting FILE(S) in a detached commit based
+on <branch>, and then performing the merge of this new commit in the
+current branch. Note that <branch> is not changed by this procedure.
+Also note that <branch> may actually be any reference, like a tag,
+or a remote branch, or even a commit SHA.
+.sp
+For more information, see <http://stackoverflow.com/questions/3111515>
+.SH OPTIONS
+.TP 8
+.BR \-h , \ \-\-help
+show help message and exit
+.TP 8
+.BR \-v , \ \-\-verbose
+do not use -q to supress normal output of internal steps from git
+checkout, rm, commit. By default, only git merge output is shown.
+Errors, however, are never supressed.
+.TP 8
+.BR \-M\  <message>, \ \-\-msgcommit =<message>
+message for the removal commit in <branch>. Not to be confused
+with the message of the merge commit, which is set by -m. Default
+message is: "remove files from '<branch>' before merge".
+.TP 8
+.BR \-m\  <message>, \ \-\-message =<message>
+message for the merge commit. Since we are not merging <branch>
+directly, but rather a detached commit based on it, we forge a
+message similar to git's default for a branch merge. Otherwise
+git would use in message the full and ugly SHA1 of our commit.
+Default message is: "Merge stripped branch '<branch>'".
+.PP
+For both commit messages, the token "<branch>" is replaced for the
+actual <branch> name.
+.sp
+Additional options are passed unchecked to git merge.
+.sp
+All options must precede <branch> and FILE(s), except -h and --help
+that may appear anywhere on the command line.
+.SH EXAMPLE
+.nf
+git-strip-merge design "photoshop/*"
+.fi
+.SH SEE ALSO
+.B https://github.com/MestreLion/git-tools
+.SH AUTHOR
+Rodrigo Silva (MestreLion) linux@rodrigosilva.com

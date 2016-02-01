@@ -1,0 +1,49 @@
+.TH GIT-REBASE-THEIRS 1 2016-01-31
+.\" For nroff, turn off justification.  Always turn off hyphenation; it makes
+.\" way too many mistakes in technical documents.
+.if n .ad l
+.nh
+.SH NAME
+git-rebase-theirs \-
+Resolve rebase conflicts and failed cherry-picks by favoring 'theirs' version
+.SH SYNOPSIS
+.B git-rebase-theirs
+.RI [ options ]
+.RI [ -- ]
+.IR FILE ...
+.SH DESCRIPTION
+Resolve git rebase conflicts in FILE(s) by favoring 'theirs' version.
+
+When using git rebase, conflicts are usually wanted to be resolved
+by favoring the <working branch> version (the branch being rebased,
+'theirs' side in a rebase), instead of the <upstream> version (the
+base branch, 'ours' side)
+
+But git rebase --strategy -X theirs is only available from git 1.7.3
+For older versions, git-rebase-theirs is the solution. And Despite the name,
+it's also useful for fixing failed cherry-picks.
+
+It works by discarding all lines between '<<<<<<< ' and '========'
+inclusive, and also the the '>>>>>> commit' marker.
+
+By default it outputs to stdout, but files can be edited in-place
+using --in-place, which, unlike sed, creates a backup by default.
+.SH OPTIONS
+.TP 8
+.BR \-h , \ \-\-help
+show usage information.
+.TP 8
+.BR \-v , \ \-\-verbose
+print more details in stderr.
+.TP 8
+.BI \-\-in-place [=SUFFIX]
+edit files in place, creating a backup with
+.I SUFFIX
+extension. Default if blank is ".bak"
+.TP 8
+.B \-\-no-backup
+disables backup
+.SH SEE ALSO
+.B https://github.com/MestreLion/git-tools
+.SH AUTHOR
+Rodrigo Silva (MestreLion) linux@rodrigosilva.com
