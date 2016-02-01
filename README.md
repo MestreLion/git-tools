@@ -73,7 +73,7 @@ git-find-uncommitted-repos
 
 *Recursively list repos with uncommitted changes*
 
-Recursively finds all git repositories in the given directory(es), runs `git status` on them, and prints the location of reposities with uncommitted changes. The tool I definitely use the most.
+Recursively finds all git repositories in the given directory(es), runs `git status` on them, and prints the location of repositories with uncommitted changes. The tool I definitely use the most.
 
 
 git-rebase-theirs
@@ -91,7 +91,7 @@ git-restore-mtime
 
 Probably the most popular and useful tool.
 
-Git, unlike other version control systems, does not preserve the original timestamp of commited files. Whenever repositories are cloned, or branches/files are checked out, file timestamps are reset to the current date. While this behavior has its justifications (notably when using `make` to compile software), sometimes it is desirable to restore the original modification date of a file (for example, when generating release tarballs). As git does not provide any way to do that, `git-restore-mtime` tries to workaround this limitation.
+Git, unlike other version control systems, does not preserve the original timestamp of committed files. Whenever repositories are cloned, or branches/files are checked out, file timestamps are reset to the current date. While this behavior has its justifications (notably when using `make` to compile software), sometimes it is desirable to restore the original modification date of a file (for example, when generating release tarballs). As git does not provide any way to do that, `git-restore-mtime` tries to workaround this limitation.
 
 For more information and background, see http://stackoverflow.com/a/13284229/624066
 
@@ -115,7 +115,7 @@ Contributing
 
 Patches are welcome! Fork, hack, request pull!
 
-If you find a bug or have any enhacement request, please to open a [new issue](https://github.com/MestreLion/git-tools/issues/new)
+If you find a bug or have any enhancement request, please open a [new issue](https://github.com/MestreLion/git-tools/issues/new)
 
 
 Written by
