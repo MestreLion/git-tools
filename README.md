@@ -69,7 +69,7 @@ Useful for creating a new repository out of a set of files from another reposito
 
 
 git-find-uncommitted-repos
--------------------------
+--------------------------
 
 *Recursively list repos with uncommitted changes*
 
