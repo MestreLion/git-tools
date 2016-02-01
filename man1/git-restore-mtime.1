@@ -19,6 +19,7 @@ recent commit that modified them
 .RB [ --skip-missing ]
 .RB [ --no-directories ]
 .RB [ --test ]
+.RB [ --commit-time ]
 .br
 .RB [ --work-tree
 .IR WORKDIR ]
@@ -79,6 +80,9 @@ will not update its directory mtime.
 .TP 8
 .BR \-\-test , \-t
 test run: do not actually update any file
+.TP 8
+.BR \-\-commit-time , \-c
+use commit time instead of author time
 .TP 8
 .BI \-\-work-tree\  WORKDIR
 specify where the work tree is. Default for most
