@@ -1,0 +1,97 @@
+.TH GIT-RESTORE-MTIME 1 2016-01-31
+.\" For nroff, turn off justification.  Always turn off hyphenation; it makes
+.\" way too many mistakes in technical documents.
+.if n .ad l
+.nh
+.SH NAME
+git-restore-mtime \-
+Restore original modification time of files based on the date of the most
+recent commit that modified them
+.SH SYNOPSIS
+.TP 18
+.B git-restore-mtime
+.RB [ -h ]
+.RB [ --quiet ]
+.RB [ --verbose ]
+.RB [ --force ]
+.RB [ --merge ]
+.br
+.RB [ --skip-missing ]
+.RB [ --no-directories ]
+.RB [ --test ]
+.RB [ --commit-time ]
+.br
+.RB [ --work-tree
+.IR WORKDIR ]
+.RB [ --git-dir
+.IR GITDIR ]
+.br
+.RI [ pathspec
+.RI [ pathspec ...]]
+.SH DESCRIPTION
+Restore original modification time of files based on the date of the most
+recent commit that modified them. Useful when generating release tarballs.
+.SH OPTIONS
+.SS Positional arguments:
+.TP 8
+.I pathspec
+only modify paths (dirs or files) matching PATHSPEC,
+relative to current directory. Default is to modify
+all non-ignored, tracked files.
+.SS Optional arguments:
+.TP 8
+.BR \-h , \ \-\-help
+show help message and exit
+.TP 8
+.BR \-\-quiet , \-q
+suppress informative messages and summary statistics.
+.TP 8
+.BR \-\-verbose , \-v
+print additional information for each processed file.
+Overwrites --quiet.
+.TP 8
+.BR \-\-force , \-f
+force execution on trees with uncommitted changes.
+.TP 8
+.BR \-\-merge , \-m
+include merge commits. Leads to more recent mtimes and
+more files per commit, thus with the same mtime (which
+may or may not be what you want). Including merge
+commits may lead to less commits being evaluated (all
+files are found sooner), which improves performance,
+sometimes substantially. But since merge commits are
+usually huge, processing them may also take longer,
+sometimes substantially. By default merge logs are
+only used for files missing from regular commit logs.
+.TP 8
+.BR \-\-skip-missing , \-s
+do not try to find missing files. If some files were
+not found in regular commit logs, by default it
+retries using merge commit logs for these files (if
+--merge was not used already). This option disables
+this behavior, which may slightly improve performance,
+but files found only in merge commits will not be
+updated.
+.TP 8
+.BR \-\-no-directories , \-D
+do not update directory mtime for files created,
+renamed or deleted in it. Note: just modifying a file
+will not update its directory mtime.
+.TP 8
+.BR \-\-test , \-t
+test run: do not actually update any file
+.TP 8
+.BR \-\-commit-time , \-c
+use commit time instead of author time
+.TP 8
+.BI \-\-work-tree\  WORKDIR
+specify where the work tree is. Default for most
+repositories is current directory.
+.TP 8
+.BI \-\-git-dir\  GITDIR
+specify where the git repository is. Default for most
+repositories <work-tree>/.git
+.SH SEE ALSO
+.B https://github.com/MestreLion/git-tools
+.SH AUTHOR
+Rodrigo Silva (MestreLion) linux@rodrigosilva.com

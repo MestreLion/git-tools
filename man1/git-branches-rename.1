@@ -1,0 +1,44 @@
+.TH GIT-BRANCHES-RENAME 1 2016-01-31
+.\" For nroff, turn off justification.  Always turn off hyphenation; it makes
+.\" way too many mistakes in technical documents.
+.if n .ad l
+.nh
+.SH NAME
+git-branches-rename \-
+Batch renames branches with a matching prefix to another prefix
+.SH SYNOPSIS
+.B git-branches-rename
+.RI [ options ]
+.I BRANCH_PREFIX NEW_PREFIX
+.SH DESCRIPTION
+Batch renames branches with a matching prefix to another prefix.
+.SH OPTIONS
+.TP 8
+.BR \-h , \ \-\-help
+show usage information.
+.TP 8
+.BR \-v , \ \-\-verbose
+print more details about what is being done.
+.TP 8
+.BR \-n , \ \-\-dry-run
+do not actually rename the branches.
+.TP 8
+.I BRANCH_PREFIX
+a prefix that matches the start of branch names.
+.TP 8
+.I NEW_PREFIX
+the new prefix for the branch names.
+.SH EXAMPLES
+.nf
+$ git-rename-branches bug bugfix
+bug/128  -> bugfix/128
+bug_test -> bugfix_test
+
+$ git-rename-branches ma backup/ma
+master -> backup/master
+main   -> backup/main
+.fi
+.SH SEE ALSO
+.B https://github.com/MestreLion/git-tools
+.SH AUTHOR
+Rodrigo Silva (MestreLion) linux@rodrigosilva.com
