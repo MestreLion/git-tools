@@ -50,8 +50,8 @@ predict the chosen name.
 .TP 8
 .I pattern
 Glob pattern to match the desired files/dirs. It will be ultimately
-evaluated by a call to bash, NOT git or sh, using extended glob
-'!(<pattern>)' rule. Quote it or escape it on command line, so it
+evaluated by a call to bash, NOT git or sh, using extended
+glob '!(<pattern>)' rule. Quote it or escape it on command line, so it
 does not get evaluated prematurely by your current shell. Only a
 single pattern is allowed: if more are required, use extglob's "|"
 syntax. Globs will be evaluated with bash's shopt dotglob set, so
