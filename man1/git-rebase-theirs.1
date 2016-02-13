@@ -14,10 +14,9 @@ Resolve rebase conflicts and failed cherry-picks by favoring 'theirs' version
 .SH DESCRIPTION
 Resolve git rebase conflicts in FILE(s) by favoring 'theirs' version.
 
-When using git rebase, conflicts are usually wanted to be resolved
-by favoring the <working branch> version (the branch being rebased,
-'theirs' side in a rebase), instead of the <upstream> version (the
-base branch, 'ours' side)
+When using git rebase, conflicts are usually wanted to be resolved by favoring
+the <working branch> version (the branch being rebased, 'theirs' side in a
+rebase), instead of the <upstream> version (the base branch, 'ours' side)
 
 But git rebase --strategy -X theirs is only available from git 1.7.3
 For older versions, git-rebase-theirs is the solution. And Despite the name,

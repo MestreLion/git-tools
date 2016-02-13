@@ -55,8 +55,8 @@ glob '!(<pattern>)' rule. Quote it or escape it on command line, so it
 does not get evaluated prematurely by your current shell. Only a
 single pattern is allowed: if more are required, use extglob's "|"
 syntax. Globs will be evaluated with bash's shopt dotglob set, so
-beware. Patterns should not contain spaces or special chars like
-" ' $ ( ) { } `, not even quoted or escaped, since that might
+beware. Patterns should not contain spaces or special chars
+like " ' $ ( ) { } `, not even quoted or escaped, since that might
 interphere with the !() syntax after pattern expansion.
 .sp
 Pattern Examples:
@@ -67,10 +67,10 @@ Pattern Examples:
 .br
 "*.h|src/|lib"
 .SH LIMITATIONS
-Renames are NOT followed. As a workaround, list the rename history with
-'git log --follow --name-status --format='%H' -- file | grep "^[RAD]"'
-and include all multiple names of a file in the pattern, as in
-"currentname|oldname|initialname". As a side efect, if a different
+Renames are NOT followed. As a workaround, list the rename history
+with 'git log --follow --name-status --format='%H' -- file | grep "^[RAD]"'
+and include all multiple names of a file in the pattern, as
+in "currentname|oldname|initialname". As a side efect, if a different
 file has taken place of an old name, it will be preserved too, and
 there is no way around this using this tool.
 .sp
