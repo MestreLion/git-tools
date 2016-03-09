@@ -15,6 +15,7 @@ recent commit that modified them
 .RB [ --verbose ]
 .RB [ --force ]
 .RB [ --merge ]
+.RB [ --first-parent ]
 .br
 .RB [ --skip-missing ]
 .RB [ --no-directories ]
@@ -63,6 +64,13 @@ sometimes substantially. But since merge commits are
 usually huge, processing them may also take longer,
 sometimes substantially. By default merge logs are
 only used for files missing from regular commit logs.
+.TP 8
+.BR \-\-first-parent
+pass --first-parent to git whatchanged to hide the
+second parent from the merge commit logs. Only has any
+effect if --merge is also specified or --skip-missing
+is not specified and there were files not found in
+regular commit logs.
 .TP 8
 .BR \-\-skip-missing , \-s
 do not try to find missing files. If some files were
