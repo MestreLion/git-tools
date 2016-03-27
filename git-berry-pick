@@ -1,0 +1,120 @@
+#!/bin/bash
+#
+# git-berry-pick - "cherry-pick" entire branches using git rebase and merge
+#
+#    Copyright (C) 2012 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program. If not see <http://www.gnu.org/licenses/gpl.html>
+#
+# For background, motivation and uses, see:
+# http://stackoverflow.com/questions/1994463
+# http://stackoverflow.com/questions/19705313
+
+#Defaults:
+verbose=1
+quiet=(--quiet)
+
+usage() {
+	if [[ "${1:-}" ]] ; then exec >&2; fi
+	cat <<-USAGE
+	Usage: $myname [options] [git-rebase options] <branch>
+	USAGE
+	if [[ "${1:-}" ]] ; then
+		cat <<- USAGE
+		Try '$myname --help' for more information.
+		USAGE
+		exit 1
+	fi
+	cat <<-USAGE
+
+	"cherry-pick" entire branches using git rebase and merge
+
+	Useful to rebase a branch onto a base branch without moving the original
+	branch head, thus creating a "copy" of its commits. The base branch is
+	then fast-forward-merged to the copy tip, just like a series of cherry-
+	picks would.
+
+	$myname combines the convenience of a ranged cherry-pick with
+	the power and conflict control of a rebase.
+
+	Options:
+	  -h, --help
+	     show this page.
+
+	  -v, --verbose
+	     do not use -q to supress normal output of internal steps from git
+	     checkout, rm, commit. By default, only git merge output is shown.
+	     Errors, however, are never supressed
+
+	Additional options are passed unchecked to git rebase.
+
+	All options must precede <branch> and FILE(s), except -h and --help
+	that may appear anywhere on the command line.
+
+	Example:
+	  $myname design "photoshop/*"
+
+	Copyright (C) 2012 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
+	License: GPLv3 or later. See <http://www.gnu.org/licenses/gpl.html>
+	USAGE
+	exit 0
+}
+
+# Helper functions
+myname="${0##*/}"
+argerr()  { printf "%s: %s\n" "${0##*/}" "${1:-error}" >&2 ; usage 1 ; }
+missing() { argerr "missing ${2:+$2 }argument${1:+ from $1}." ; }
+
+# Option handling
+rebaseopts=()
+for arg in "$@"; do case "$arg" in -h|--help) usage ;; esac; done
+while (( $# )); do
+	case "$1" in
+	-v|--verbose  ) verbose=1            ;;
+	-*            ) rebaseopts+=( "$1" ) ;;
+	*)
+		[[ "$branch" ]] && argerr "Too many arguments: $1"
+		branch="$1"
+		shift
+	;;
+	esac
+	shift
+done
+
+
+# Argument handling
+[[ "$branch" ]] || missing "" "<branch>"
+((verbose)) && quiet=()
+
+
+# Here the fun begins...
+gitbranch() (
+	set -o pipefail
+	git symbolic-ref "$1" 2>/dev/null | sed 's/refs\/heads\///' ||
+	git rev-parse "$1"
+)
+
+base=$(gitbranch HEAD)
+
+while temp="$myname_$branch-$RANDOM" && git branch | grep -q "$temp"; do
+	:
+done
+
+#trap 'git checkout --quiet "$base"' EXIT
+
+git checkout -b "$temp" "$branch" &&
+git rebase "$base"                &&
+git checkout "$base"              &&
+git merge "$temp"                 &&
+git branch -d "$temp"
