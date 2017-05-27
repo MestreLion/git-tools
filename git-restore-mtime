@@ -162,7 +162,7 @@ gitobj = subprocess.Popen(gitcmd + shlex.split('ls-files --full-name') +
                           ['--'] + args.pathspec,
                           stdout=subprocess.PIPE)
 for line in gitobj.stdout:
-    lsfileslist.add(os.path.relpath(line.strip(), workdir))
+    lsfileslist.add(line.strip())
 
 # List files matching user pathspec, relative to current directory
 # git commands always print paths relative to work tree root
