@@ -37,13 +37,6 @@ import logging as logger
 import argparse
 import time
 
-if sys.version_info[:2] >= (3, 0):
-    def text(s):
-        return s.decode('utf-8')
-else:
-    def text(s):
-        return s
-
 parser = argparse.ArgumentParser(
     description='Restore original modification time of files based on '
                 'the date of the most recent commit that modified them. '
@@ -144,8 +137,9 @@ stepmissing = 100
 
 # First things first: Where and Who are we?
 try:
-    workdir, gitdir = text(subprocess.check_output(gitcmd + shlex.split(
-                    'rev-parse --show-toplevel --git-dir'))).split('\n')[:2]
+    workdir, gitdir = subprocess.check_output(gitcmd + shlex.split(
+                    'rev-parse --show-toplevel --git-dir'),
+                    universal_newlines=True).split('\n')[:2]
 
     workdir = os.path.abspath(workdir)
     gitdir  = os.path.abspath(gitdir)
@@ -160,7 +154,7 @@ except subprocess.CalledProcessError as e:
 lsfileslist = set()
 gitobj = subprocess.Popen(gitcmd + shlex.split('ls-files --full-name') +
                           ['--'] + args.pathspec,
-                          stdout=subprocess.PIPE)
+                          stdout=subprocess.PIPE, universal_newlines=True)
 for line in gitobj.stdout:
     lsfileslist.add(line.strip())
 
@@ -219,9 +213,9 @@ logger.info("{:,} files to be processed in work dir".format(totalfiles))
 ignoredlist = set()
 gitobj = subprocess.Popen(gitcmd + shlex.split('status --porcelain --ignored') +
                           ['--'] + args.pathspec,
-                          stdout=subprocess.PIPE)
+                          stdout=subprocess.PIPE, universal_newlines=True)
 for line in gitobj.stdout:
-    line = text(line.strip())
+    line = line.strip()
     status = line[:2]
     filespec = line[3:]
 
@@ -262,10 +256,10 @@ def parselog(merge=False, filterlist=[]):
                               (['-m'] if merge else []) +
                               (['--first-parent'] if args.first_parent else []) +
                               ['--'] + filterlist,
-                              stdout=subprocess.PIPE)
+                              stdout=subprocess.PIPE, universal_newlines=True)
     for line in gitobj.stdout:
         loglines += 1
-        line = text(line.strip())
+        line = line.strip()
 
         # Blank line between Date and list of files
         if not line: continue
