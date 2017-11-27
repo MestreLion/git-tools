@@ -28,6 +28,15 @@ import logging as logger
 import argparse
 import time
 
+if os.utime in getattr(os, supports_follow_symlinks, []):
+    def lutime(path, times):
+        os.utime(path, times, follow_symlinks=False)
+else:
+    def lutime(path, times):
+        if os.path.islink(path):
+            raise Warning('Unable to update symlink: ' + path)
+        os.utime(path, times)
+
 parser = argparse.ArgumentParser(
     description='Restore original modification time of files based on '
                 'the date of the most recent commit that modified them. '
@@ -99,7 +108,7 @@ def parselog(merge=False, filterlist=[]):
                 logger.debug("%s\t%s", time.ctime(mtime), file)
                 filelist.remove(file)
                 try:
-                    os.utime(os.path.join(workdir, file), (mtime, mtime))
+                    lutime(os.path.join(workdir, file), (mtime, mtime))
                 except Exception as e:
                     logger.error("%s\n", e)
 
