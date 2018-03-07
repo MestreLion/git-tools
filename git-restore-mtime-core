@@ -94,7 +94,7 @@ def parselog(merge=False, filterlist=[]):
 
         # File line
         if line.startswith(':'):
-            file = line.split('\t')[-1]
+            file = os.path.normpath(line.split('\t')[-1])
             if file in filelist:
                 logger.debug("%s\t%s", time.ctime(mtime), file)
                 filelist.remove(file)
