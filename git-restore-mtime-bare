@@ -55,7 +55,7 @@ for line in gitobj.stdout:
 
     # File line
     if line.startswith(':'):
-        file = line.split('\t')[-1]
+        file = os.path.normpath(line.split('\t')[-1])
         if file in filelist:
             filelist.remove(file)
             #print mtime, file

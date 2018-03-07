@@ -156,7 +156,7 @@ gitobj = subprocess.Popen(gitcmd + shlex.split('ls-files --full-name') +
                           ['--'] + args.pathspec,
                           stdout=subprocess.PIPE, universal_newlines=True)
 for line in gitobj.stdout:
-    lsfileslist.add(line.strip())
+    lsfileslist.add(os.path.normpath(line.strip()))
 
 # List files matching user pathspec, relative to current directory
 # git commands always print paths relative to work tree root
@@ -220,8 +220,7 @@ for line in gitobj.stdout:
     filespec = line[3:]
 
     # Make sure the slash matches the os; for Windows we need a backslash
-    if not os.sep == '/':
-        filespec = filespec.replace('/', os.sep)
+    filespec = os.path.normpath(filespec)
 
     if status in ['??', '!!']: # also safe to ignore: 'A ', ' M'
         # filespec can be a dir, so we must iterate on filelist
@@ -273,8 +272,7 @@ def parselog(merge=False, filterlist=[]):
             file = linetok[-1]
 
             # Make sure the slash matches the os; for Windows we need a backslash
-            if not os.sep == '/':
-                file = file.replace('/',os.sep)
+            file = os.path.normpath(file)
 
             if file.startswith('"'):
                 file = file[1:-1].decode("string-escape")
