@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # git-strip-merge - a git-merge that delete files on branch before merging
 #
