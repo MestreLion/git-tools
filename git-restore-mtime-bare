@@ -26,6 +26,14 @@
 import subprocess, shlex
 import sys, os.path
 
+if os.utime in getattr(os, 'supports_follow_symlinks', []):
+    def lutime(path, times):
+        os.utime(path, times, follow_symlinks=False)
+else:
+    def lutime(path, times):
+        if not os.path.islink(path):
+            os.utime(path, times)
+
 # List files matching user pathspec, relative to current directory
 filelist = set()
 for path in (sys.argv[1:] or [os.path.curdir]):
@@ -59,7 +67,7 @@ for line in gitobj.stdout:
         if file in filelist:
             filelist.remove(file)
             #print mtime, file
-            os.utime(file, (mtime, mtime))
+            lutime(file, (mtime, mtime))
 
     # Date line
     else:
