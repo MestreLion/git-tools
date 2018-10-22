@@ -103,6 +103,11 @@ Git, unlike other version control systems, does not preserve the original timest
 
 For more information and background, see http://stackoverflow.com/a/13284229/624066
 
+For TravisCI users, simply add a config to `.travis.yml` so it clones the full repository history:
+
+	git:
+	  depth: false
+
 
 git-strip-merge
 ---------------
