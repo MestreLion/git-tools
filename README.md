@@ -13,12 +13,16 @@ Requirements
 
 Bash and Python are already installed by default in virtually all GNU/Linux distros. And you probably already have Git if you are interested in these tools. But if somehow you don't, the command to install dependencies for Debian-like distros (like Ubuntu/Mint) is:
 
-`sudo apt-get bash python git`
+	sudo apt-get bash python git
 
 Install
 -------
 
-Just clone the repository and add the install directory to your `$PATH`
+On recent Debian, Ubuntu 16.04+, Mint and its derivatives, most tools are in the repositories as `git-restore-mtime`:
+
+	sudo apt install git-restore-mtime
+
+For manual installing to get most recent updates, just clone the repository and add the install directory to your `$PATH`
 
 	cd ~/some/dir
 	git clone https://github.com/MestreLion/git-tools.git
@@ -28,7 +32,11 @@ Just clone the repository and add the install directory to your `$PATH`
 Uninstall
 ---------
 
-Just delete the directory! And, optionally, remove it from your `$PATH`
+For the packaged version, use `apt`:
+
+	sudo apt purge git-restore-mtime
+
+For the manual install, just delete the directory! And, optionally, remove it from your `$PATH`
 
 	rm -rf ~/some/dir/git-tools
 	sed -i '/git-tools/d' ~/.profile
@@ -89,7 +97,7 @@ git-restore-mtime
 
 *Restore original modification time of files based on the date of the most recent commit that modified them*
 
-Probably the most popular and useful tool.
+Probably the most popular and useful tool, and the reason this repository was packaged into Debian.
 
 Git, unlike other version control systems, does not preserve the original timestamp of committed files. Whenever repositories are cloned, or branches/files are checked out, file timestamps are reset to the current date. While this behavior has its justifications (notably when using `make` to compile software), sometimes it is desirable to restore the original modification date of a file (for example, when generating release tarballs). As git does not provide any way to do that, `git-restore-mtime` tries to workaround this limitation.
 
