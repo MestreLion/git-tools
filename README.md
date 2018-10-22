@@ -18,9 +18,17 @@ Bash and Python are already installed by default in virtually all GNU/Linux dist
 Install
 -------
 
-On recent Debian, Ubuntu 16.04+, Mint and its derivatives, most tools are in the repositories as `git-restore-mtime`:
+On recent Debian, Ubuntu 16.04+, Mint and their derivatives, most tools are in the repositories as `git-restore-mtime`:
 
 	sudo apt install git-restore-mtime
+
+On Fedora 27+ and EPEL 6+, as root:
+
+	yum install git-tools
+
+Gentoo Testing, also as root:
+
+	emerge dev-vcs/git-tools
 
 For manual installing to get most recent updates, just clone the repository and add the install directory to your `$PATH`
 
@@ -32,9 +40,7 @@ For manual installing to get most recent updates, just clone the repository and 
 Uninstall
 ---------
 
-For the packaged version, use `apt`:
-
-	sudo apt purge git-restore-mtime
+For the packaged versions, use your repository tools such as `apt`, `yum`, `emerge`.
 
 For the manual install, just delete the directory! And, optionally, remove it from your `$PATH`
 
