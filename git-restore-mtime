@@ -304,7 +304,7 @@ def parselog(merge=False, filterlist=[]):
                 if status[-1] in ['A', 'D'] and dir in dirlist:
                     logger.debug("%d\t%d\t-\t%s\t%s",
                                  loglines, commits,
-                                 time.ctime(mtime), dir)
+                                 time.ctime(mtime), "{}/".format(dir or '.'))
                     dirlist.remove(dir)
                     try:
                         if not args.test:
