@@ -7,8 +7,8 @@ Assorted git-related scripts and tools
 Requirements
 ------------
 
-- **Git** (duh!). Tested in v1.7.9.5 and prior versions since 2010
-- **Python** (for `git-restore-mtime`). Tested in Python 2.7.4, also works in Python 3
+- **Git** (duh!). Tested in v2.17.1 and prior versions since 2010
+- **Python** (for `git-restore-mtime`). Tested in Python 3.6, also works in Python 3.1+
 - **Bash** (for all other tools). Tested in Bash 4, some may work in Bash 3 or even `sh`
 
 Bash and Python are already installed by default in virtually all GNU/Linux distros. And you probably already have Git if you are interested in these tools. But if somehow you don't, the command to install dependencies for Debian-like distros (like Ubuntu/Mint) is:

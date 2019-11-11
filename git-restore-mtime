@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 # git-restore-mtime - Change mtime of files based on commit date of last change
 #
@@ -22,8 +21,8 @@
 # date of the most recent commit that modified the file.
 #
 # Useful prior to generating release tarballs, so each file is archived with a
-# date that resembles the date when the file was actually last modified.
-# (assuming the actual modification date and its commit date are close)
+# date that is similar to the date when the file was actually last modified,
+# assuming the actual modification date and its commit date are close.
 
 # By default ignores all ignored and untracked files, and also refuses to work
 # on trees with uncommitted changes.
