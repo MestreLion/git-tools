@@ -31,10 +31,11 @@ Gentoo Testing, also as root:
 	emerge dev-vcs/git-tools
 
 For manual installing to get most recent updates, just clone the repository and add the install directory to your `$PATH`
-
-	cd ~/some/dir
-	git clone https://github.com/MestreLion/git-tools.git
-	echo 'PATH=$PATH:~/some/dir/git-tools' >> ~/.profile  # or ~/.bashrc
+```sh
+cd ~/some/dir
+git clone https://github.com/MestreLion/git-tools.git
+echo 'PATH=$PATH:~/some/dir/git-tools' >> ~/.profile  # or ~/.bashrc
+```
 
 
 Uninstall
@@ -43,10 +44,10 @@ Uninstall
 For the packaged versions, use your repository tools such as `apt`, `yum`, `emerge`.
 
 For the manual install, just delete the directory! And, optionally, remove it from your `$PATH`
-
-	rm -rf ~/some/dir/git-tools
-	sed -i '/git-tools/d' ~/.profile
-
+```sh
+rm -rf ~/some/dir/git-tools
+sed -i '/git-tools/d' ~/.profile
+```
 ---
 
 Tools
@@ -103,17 +104,17 @@ git-restore-mtime
 
 *Restore original modification time of files based on the date of the most recent commit that modified them*
 
-Probably the most popular and useful tool, and the reason this repository was packaged into Debian.
+Probably the most popular and useful tool, and the reason this repository was packaged into distros.
 
 Git, unlike other version control systems, does not preserve the original timestamp of committed files. Whenever repositories are cloned, or branches/files are checked out, file timestamps are reset to the current date. While this behavior has its justifications (notably when using `make` to compile software), sometimes it is desirable to restore the original modification date of a file (for example, when generating release tarballs). As git does not provide any way to do that, `git-restore-mtime` tries to workaround this limitation.
 
 For more information and background, see http://stackoverflow.com/a/13284229/624066
 
-For TravisCI users, simply add a config to `.travis.yml` so it clones the full repository history:
-
-	git:
-	  depth: false
-
+For TravisCI users, simply add this setting to `.travis.yml` so it clones the full repository history:
+```
+git:
+  depth: false
+```
 
 git-strip-merge
 ---------------
@@ -123,10 +124,10 @@ git-strip-merge
 Answer for "*How to setup a git driver to ignore a folder on merge?*", see http://stackoverflow.com/questions/3111515
 
 Example:
-
-	$ git checkout master
-	$ git-strip-merge design photoshop/*.psd
-
+```
+$ git checkout master
+$ git-strip-merge design photoshop/*.psd
+```
 ---
 
 Contributing
@@ -137,18 +138,16 @@ Patches are welcome! Fork, hack, request pull!
 If you find a bug or have any enhancement request, please open a [new issue](https://github.com/MestreLion/git-tools/issues/new)
 
 
-Written by
-----------
+Author
+------
 
 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
 
-Licenses and Copyright
-----------------------
-
+License and Copyright
+---------------------
+```
 Copyright (C) 2012 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>.
-
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
-
 This is free software: you are free to change and redistribute it.
-
 There is NO WARRANTY, to the extent permitted by law.
+```
