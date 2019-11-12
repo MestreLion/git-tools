@@ -163,6 +163,10 @@ def touch(path, mtime, test=False):
     os.utime(path, (mtime, mtime), follow_symlinks=False)
 
 
+def isodate(secs):
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(secs))
+
+
 def git_ls_files(pathspec, gitcmd):
     gitobj = subprocess.Popen(gitcmd + shlex.split('ls-files --full-name') +
                               ['--'] + pathspec,
@@ -292,7 +296,7 @@ if ignoredlist:
 
 
 # Process the log until all files are 'touched'
-logger.debug("Line #\tLog #\tFiles\tmtime\tFile")
+logger.debug("Line #\tLog #\tF.Left\tModification Time\tFile Name")
 def parselog(merge=False, filterlist=[]):
     global loglines, commits, touches, errors, dirtouches, direrrors, files
 
@@ -323,7 +327,7 @@ def parselog(merge=False, filterlist=[]):
             if file in filelist:
                 logger.debug("%d\t%d\t%d\t%s\t%s",
                              loglines, commits, files,
-                             time.ctime(mtime), file)
+                             isodate(mtime), file)
                 filelist.remove(file)
                 files -= 1
                 try:
@@ -338,7 +342,7 @@ def parselog(merge=False, filterlist=[]):
                 if status[-1] in ('A', 'D') and dirname in dirlist:
                     logger.debug("%d\t%d\t-\t%s\t%s",
                                  loglines, commits,
-                                 time.ctime(mtime), "{}/".format(dirname or '.'))
+                                 isodate(mtime), "{}/".format(dirname or '.'))
                     dirlist.remove(dirname)
                     try:
                         touch(os.path.join(workdir, dirname), mtime, args.test)
