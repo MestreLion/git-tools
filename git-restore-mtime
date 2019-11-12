@@ -37,6 +37,8 @@ import argparse
 import time
 
 
+# Command-line interface ######################################################
+
 parser = argparse.ArgumentParser(
     description='Restore original modification time of files based on '
                 'the date of the most recent commit that modified them. '
@@ -127,6 +129,8 @@ else:              level = logger.INFO
 logger.basicConfig(level=level, format='%(message)s')
 
 
+# Helper functions #########################################################
+
 def normalize(path):
     """Normalize paths from git, handling non-ASCII characters.
 
@@ -159,6 +163,16 @@ def touch(path, mtime, test=False):
     os.utime(path, (mtime, mtime), follow_symlinks=False)
 
 
+def git_ls_files(pathspec, gitcmd):
+    gitobj = subprocess.Popen(gitcmd + shlex.split('ls-files --full-name') +
+                              ['--'] + pathspec,
+                              stdout=subprocess.PIPE, universal_newlines=True)
+    for line in gitobj.stdout:
+        yield normalize(line.strip())
+
+
+# Main Logic ##################################################################
+
 # UI done, it's show time!
 start = time.time()  # yes, Wall time. CPU time is not realistic for users.
 
@@ -182,12 +196,7 @@ except subprocess.CalledProcessError as e:
 
 
 # Get the files managed by git
-lsfileslist = set()
-gitobj = subprocess.Popen(gitcmd + shlex.split('ls-files --full-name') +
-                          ['--'] + args.pathspec,
-                          stdout=subprocess.PIPE, universal_newlines=True)
-for line in gitobj.stdout:
-    lsfileslist.add(normalize(line.strip()))
+lsfileslist = set(git_ls_files(args.pathspec, gitcmd))
 
 # List files matching user pathspec, relative to current directory
 # git commands always print paths relative to work tree root
@@ -231,7 +240,7 @@ for path in args.pathspec:
             if args.dirs:
                 dirname = os.path.relpath(root, workdir)
                 if dirname == '.':
-                    dirname = ''
+                    dirname = ''  # Like git does
                 dirlist.add(dirname)
 
             for file in files:
@@ -242,8 +251,7 @@ filelist &= lsfileslist
 
 totaldirs  = dirs  = len(dirlist)
 totalfiles = files = len(filelist)
-logger.info("{0:,} files in {1:,} directories to be processed in work dir"
-            .format(totalfiles, totaldirs))
+logger.info("{0:,} files to be processed in work dir".format(totalfiles))
 
 
 # Discard untracked and ignored files
