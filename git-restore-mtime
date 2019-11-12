@@ -135,6 +135,32 @@ else:              level = logger.INFO
 logger.basicConfig(level=level, format='%(message)s')
 
 
+def normalize(path):
+    """Normalize paths from git, handling non-ASCII characters.
+
+    Git for Windows, as of v1.7.10, stores paths as UTF-8 normalization form C. If path
+    contains non-ASCII or non-printable chars it outputs the UTF-8 in octal-escaped
+    notation, double-quoting the whole path. Double-quotes and backslashes are also escaped.
+
+    https://git-scm.com/docs/git-config#Documentation/git-config.txt-corequotePath
+    https://github.com/msysgit/msysgit/wiki/Git-for-Windows-Unicode-Support
+    https://github.com/git/git/blob/master/Documentation/i18n.txt
+
+    Example on git output, this function reverts this:
+    r'back\slash_double"quote_açaí' -> r'"back\\slash_double\"quote_a\303\247a\303\255"'
+    """
+    if path.startswith('"'):
+        # Python 2: path = path[1:-1].decode("string-escape")
+        # Python 3: https://stackoverflow.com/a/46650050/624066
+        path = (path[1:-1]                 # Remove enclosing double quotes
+                .encode('latin1')          # Convert to bytes, required 'unicode-escape'
+                .decode('unicode-escape')  # Perform the actual octal-escaping decode
+                .encode('latin1')          # 1:1 mapping to bytes, forming UTF-8 encoding
+                .decode('utf8'))           # Decode from UTF-8
+    # Make sure the slash matches the OS; for Windows we need a backslash
+    return os.path.normpath(path)
+
+
 # UI done, it's show time!
 start = time.time()  # yes, Wall time. CPU time is not realistic for users.
 
@@ -163,7 +189,7 @@ gitobj = subprocess.Popen(gitcmd + shlex.split('ls-files --full-name') +
                           ['--'] + args.pathspec,
                           stdout=subprocess.PIPE, universal_newlines=True)
 for line in gitobj.stdout:
-    lsfileslist.add(os.path.normpath(line.strip()))
+    lsfileslist.add(normalize(line.strip()))
 
 # List files matching user pathspec, relative to current directory
 # git commands always print paths relative to work tree root
@@ -282,11 +308,8 @@ def parselog(merge=False, filterlist=[]):
             status = linetok[0]
             file = linetok[-1]
 
-            # Make sure the slash matches the OS; for Windows we need a backslash
-            file = os.path.normpath(file)
-
-            if file.startswith('"'):
-                file = file[1:-1].decode("string-escape")
+            # Handles non-ASCII chars and OS path separator
+            file = normalize(file)
 
             if file in filelist:
                 logger.debug("%d\t%d\t%d\t%s\t%s",
