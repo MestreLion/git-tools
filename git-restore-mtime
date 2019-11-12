@@ -36,14 +36,6 @@ import logging as logger
 import argparse
 import time
 
-if os.utime in getattr(os, 'supports_follow_symlinks', []):
-    def lutime(path, times):
-        os.utime(path, times, follow_symlinks=False)
-else:
-    def lutime(path, times):
-        if os.path.islink(path):
-            raise Warning('Unable to update symlink: ' + path)
-        os.utime(path, times)
 
 parser = argparse.ArgumentParser(
     description='Restore original modification time of files based on '
@@ -161,6 +153,12 @@ def normalize(path):
     return os.path.normpath(path)
 
 
+def touch(path, mtime, test=False):
+    """The actual mtime update"""
+    if test: return
+    os.utime(path, (mtime, mtime), follow_symlinks=False)
+
+
 # UI done, it's show time!
 start = time.time()  # yes, Wall time. CPU time is not realistic for users.
 
@@ -195,6 +193,7 @@ for line in gitobj.stdout:
 # git commands always print paths relative to work tree root
 filelist = set()
 dirlist  = set()
+update_symlinks = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
 for path in args.pathspec:
 
     # Normalize user input so ./doc = doc/ = doc/../doc/. = doc
@@ -211,7 +210,11 @@ for path in args.pathspec:
         continue
 
     # file or symlink (to file, to dir or broken - git handles the same way)
-    if os.path.isfile(path) or os.path.islink(path):
+    islink = os.path.islink(path)
+    if os.path.isfile(path) or islink:
+        if islink and not update_symlinks:
+            logger.warn("WARNING: Skipping symlink, OS does not support update: %s", path)
+            continue
         # Always add them relative to worktree root
         filelist.add(os.path.relpath(path, workdir))
 
@@ -318,27 +321,25 @@ def parselog(merge=False, filterlist=[]):
                 filelist.remove(file)
                 files -= 1
                 try:
-                    if not args.test:
-                        lutime(os.path.join(workdir, file), (mtime, mtime))
+                    touch(os.path.join(workdir, file), mtime, args.test)
                     touches += 1
                 except Exception as e:
-                    logger.error("ERROR: %s\n", e)
+                    logger.error("ERROR: %s", e)
                     errors += 1
 
             if args.dirs:
                 dirname = os.path.dirname(file)
-                if status[-1] in ['A', 'D'] and dirname in dirlist:
+                if status[-1] in ('A', 'D') and dirname in dirlist:
                     logger.debug("%d\t%d\t-\t%s\t%s",
                                  loglines, commits,
                                  time.ctime(mtime), "{}/".format(dirname or '.'))
                     dirlist.remove(dirname)
                     dirs -= 1
                     try:
-                        if not args.test:
-                            lutime(os.path.join(workdir, dirname), (mtime, mtime))
+                        touch(os.path.join(workdir, dirname), mtime, args.test)
                         dirtouches += 1
                     except Exception as e:
-                        logger.error("ERROR: %s\n", e)
+                        logger.error("ERROR: %s", e)
                         direrrors += 1
 
         # Date line
