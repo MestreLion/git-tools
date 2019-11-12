@@ -57,7 +57,7 @@ parser.add_argument('--quiet', '-q',
 parser.add_argument('--verbose', '-v',
                     action="store_true",
                     help='print additional information for each processed file. '
-                    'Overwrites --quiet.')
+                    'Overrides --quiet.')
 
 parser.add_argument('--force', '-f',
                     action="store_true",
@@ -138,8 +138,7 @@ logger.basicConfig(level=level, format='%(message)s')
 # UI done, it's show time!
 start = time.time()  # yes, Wall time. CPU time is not realistic for users.
 
-lines = loglines = commits = totalfiles = \
-ignoredfiles = files = touches = errors = 0
+loglines = commits = ignoredfiles = touches = errors = dirtouches = direrrors = 0
 stepmissing = 100
 
 
@@ -201,10 +200,10 @@ for path in args.pathspec:
                 files.remove('.git')
 
             if args.dirs:
-                dir = os.path.relpath(root, workdir)
-                if dir == '.':
-                    dir = ''
-                dirlist.add(dir)
+                dirname = os.path.relpath(root, workdir)
+                if dirname == '.':
+                    dirname = ''
+                dirlist.add(dirname)
 
             for file in files:
                 # Always add them relative to worktree root
@@ -214,7 +213,8 @@ filelist &= lsfileslist
 
 totaldirs  = dirs  = len(dirlist)
 totalfiles = files = len(filelist)
-logger.info("{:,} files to be processed in work dir".format(totalfiles))
+logger.info("{0:,} files in {1:,} directories to be processed in work dir"
+            .format(totalfiles, totaldirs))
 
 
 # Discard untracked and ignored files
@@ -227,14 +227,16 @@ for line in gitobj.stdout:
     status = line[:2]
     filespec = line[3:]
 
-    # Make sure the slash matches the os; for Windows we need a backslash
+    # Make sure the slash matches the OS; for Windows we need a backslash
     filespec = os.path.normpath(filespec)
 
-    if status in ['??', '!!']: # also safe to ignore: 'A ', ' M'
+    if status in ('??', '!!'):  # also safe to ignore: 'A ', ' M'
         # filespec can be a dir, so we must iterate on filelist
         for file in filelist:
-            if ( (filespec.endswith(os.sep) and  file.startswith(filespec)) or
-                 (file == filespec) ):
+            if (
+                (filespec.endswith(os.sep) and file.startswith(filespec))
+                or (file == filespec)
+            ):
                 logger.debug("Ignoring: %s", file)
                 ignoredlist.add(file)
                 files -= 1
@@ -257,13 +259,14 @@ if ignoredfiles:
 # Process the log until all files are 'touched'
 logger.debug("Line #\tLog #\tFiles\tmtime\tFile")
 def parselog(merge=False, filterlist=[]):
-    global loglines, dirs, files, touches, errors, commits
+    global loglines, commits, touches, errors, dirtouches, direrrors, dirs, files
 
     gitobj = subprocess.Popen(gitcmd + shlex.split('whatchanged --pretty={}'.format(args.timeformat)) +
                               (['-m'] if merge else []) +
                               (['--first-parent'] if args.first_parent else []) +
                               ['--'] + filterlist,
                               stdout=subprocess.PIPE, universal_newlines=True)
+    mtime = 0
     for line in gitobj.stdout:
         loglines += 1
         line = line.strip()
@@ -279,7 +282,7 @@ def parselog(merge=False, filterlist=[]):
             status = linetok[0]
             file = linetok[-1]
 
-            # Make sure the slash matches the os; for Windows we need a backslash
+            # Make sure the slash matches the OS; for Windows we need a backslash
             file = os.path.normpath(file)
 
             if file.startswith('"'):
@@ -300,18 +303,20 @@ def parselog(merge=False, filterlist=[]):
                     errors += 1
 
             if args.dirs:
-                dir = os.path.dirname(file)
-                if status[-1] in ['A', 'D'] and dir in dirlist:
+                dirname = os.path.dirname(file)
+                if status[-1] in ['A', 'D'] and dirname in dirlist:
                     logger.debug("%d\t%d\t-\t%s\t%s",
                                  loglines, commits,
-                                 time.ctime(mtime), "{}/".format(dir or '.'))
-                    dirlist.remove(dir)
+                                 time.ctime(mtime), "{}/".format(dirname or '.'))
+                    dirlist.remove(dirname)
+                    dirs -= 1
                     try:
                         if not args.test:
-                            lutime(os.path.join(workdir, dir), (mtime, mtime))
-                        dirs -= 1
+                            lutime(os.path.join(workdir, dirname), (mtime, mtime))
+                        dirtouches += 1
                     except Exception as e:
                         logger.error("ERROR: %s\n", e)
+                        direrrors += 1
 
         # Date line
         else:
@@ -354,16 +359,19 @@ logger.info(
     "{:13,} commits evaluated"
     "".format(time.time()-start, loglines, commits))
 
-if touches != totalfiles:
-                 logger.info("{:13,} total files".format(totalfiles))
-if ignoredfiles: logger.info("{:13,} ignored files".format(ignoredfiles))
-if files:        logger.info("{:13,} missing files".format(files))
-if errors:       logger.info("{:13,} update errors".format(errors))
-
-logger.info("{:13,} updated files".format(touches))
-
 if args.dirs:
-    logger.info("{:13,} updated directories".format(totaldirs - dirs))
+#   if dirtouches != totaldirs: logger.info("{:13,} directories".format(totaldirs))
+#   if dirs:                    logger.info("{:13,} directories missing".format(dirs))
+    if direrrors:               logger.info("{:13,} directory update errors".format(direrrors))
+
+    logger.info("{:13,} directories updated".format(dirtouches))
+
+if touches != totalfiles: logger.info("{:13,} files".format(totalfiles))
+if ignoredfiles:          logger.info("{:13,} files ignored".format(ignoredfiles))
+if files:                 logger.info("{:13,} files missing".format(files))
+if errors:                logger.info("{:13,} file update errors".format(errors))
+
+logger.info("{:13,} files updated".format(touches))
 
 if args.test:
         logger.info("TEST RUN - No files modified!")
