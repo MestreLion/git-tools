@@ -176,7 +176,7 @@ def git_ls_files(pathspec, gitcmd):
 # UI done, it's show time!
 start = time.time()  # yes, Wall time. CPU time is not realistic for users.
 
-loglines = commits = ignoredfiles = touches = errors = dirtouches = direrrors = 0
+loglines = commits = touches = errors = dirtouches = direrrors = 0
 stepmissing = 100
 
 
@@ -249,7 +249,6 @@ for path in args.pathspec:
 
 filelist &= lsfileslist
 
-totaldirs  = dirs  = len(dirlist)
 totalfiles = files = len(filelist)
 logger.info("{0:,} files to be processed in work dir".format(totalfiles))
 
@@ -276,8 +275,6 @@ for line in gitobj.stdout:
             ):
                 logger.debug("Ignoring: %s", file)
                 ignoredlist.add(file)
-                files -= 1
-                ignoredfiles += 1
     elif not args.force:
         logger.critical(
          "ERROR: There are local changes in the working directory.\n"
@@ -287,16 +284,17 @@ for line in gitobj.stdout:
         gitobj.kill()
         sys.exit(1)
 
-if ignoredfiles:
+if ignoredlist:
     filelist -= ignoredlist
+    files = len(filelist)
     logger.info("{:,} files to process after ignoring {:,}"
-                "".format(files, ignoredfiles))
+                "".format(files, len(ignoredlist)))
 
 
 # Process the log until all files are 'touched'
 logger.debug("Line #\tLog #\tFiles\tmtime\tFile")
 def parselog(merge=False, filterlist=[]):
-    global loglines, commits, touches, errors, dirtouches, direrrors, dirs, files
+    global loglines, commits, touches, errors, dirtouches, direrrors, files
 
     gitobj = subprocess.Popen(gitcmd + shlex.split('whatchanged --pretty={}'.format(args.timeformat)) +
                               (['-m'] if merge else []) +
@@ -342,7 +340,6 @@ def parselog(merge=False, filterlist=[]):
                                  loglines, commits,
                                  time.ctime(mtime), "{}/".format(dirname or '.'))
                     dirlist.remove(dirname)
-                    dirs -= 1
                     try:
                         touch(os.path.join(workdir, dirname), mtime, args.test)
                         dirtouches += 1
@@ -392,14 +389,11 @@ logger.info(
     "".format(time.time()-start, loglines, commits))
 
 if args.dirs:
-#   if dirtouches != totaldirs: logger.info("{:13,} directories".format(totaldirs))
-#   if dirs:                    logger.info("{:13,} directories missing".format(dirs))
-    if direrrors:               logger.info("{:13,} directory update errors".format(direrrors))
-
+    if direrrors: logger.info("{:13,} directory update errors".format(direrrors))
     logger.info("{:13,} directories updated".format(dirtouches))
 
 if touches != totalfiles: logger.info("{:13,} files".format(totalfiles))
-if ignoredfiles:          logger.info("{:13,} files ignored".format(ignoredfiles))
+if ignoredlist:           logger.info("{:13,} files ignored".format(len(ignoredlist)))
 if files:                 logger.info("{:13,} files missing".format(files))
 if errors:                logger.info("{:13,} file update errors".format(errors))
 
