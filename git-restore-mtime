@@ -28,7 +28,7 @@
 # on trees with uncommitted changes.
 
 if __name__ != "__main__":
-    raise ImportError("%s should not be used as a module." % __name__)
+    raise ImportError("{} should not be used as a module.".format(__name__))
 
 import subprocess, shlex
 import sys, os.path
@@ -119,8 +119,8 @@ parser.add_argument('--git-dir',
 args = parser.parse_args()
 
 gitcmd = ['git']
-if args.workdir: gitcmd.append("--work-tree=%s" % args.workdir)
-if args.gitdir : gitcmd.append("--git-dir=%s"   % args.gitdir)
+if args.workdir: gitcmd.extend(('--work-tree', args.workdir))
+if args.gitdir : gitcmd.extend(('--git-dir',   args.gitdir))
 
 if   args.verbose: level = logger.DEBUG
 elif args.quiet:   level = logger.WARN
