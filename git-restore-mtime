@@ -183,7 +183,6 @@ start = time.time()  # yes, Wall time. CPU time is not realistic for users.
 loglines = commits = touches = errors = dirtouches = direrrors = 0
 stepmissing = 100
 
-
 # First things first: Where and Who are we?
 try:
     workdir, gitdir = subprocess.check_output(gitcmd + shlex.split(
@@ -198,6 +197,14 @@ except subprocess.CalledProcessError as e:
     # So we just...
     sys.exit(e.returncode)
 
+# Do not work on dirty repositories, unless --force
+if not args.force and subprocess.call(gitcmd + shlex.split('diff --no-ext-diff --quiet')):
+    logger.critical(
+     "ERROR: There are local changes in the working directory.\n"
+     "This could lead to undesirable results for modified files.\n"
+     "Please, commit your changes (or use --force) and try again.\n"
+     "Aborting")
+    sys.exit(1)
 
 # Get the files managed by git
 lsfileslist = set(git_ls_files(args.pathspec, gitcmd))
@@ -255,44 +262,6 @@ filelist &= lsfileslist
 
 totalfiles = files = len(filelist)
 logger.info("{0:,} files to be processed in work dir".format(totalfiles))
-
-
-# Discard untracked and ignored files
-ignoredlist = set()
-gitobj = subprocess.Popen(gitcmd + shlex.split('status --porcelain --ignored') +
-                          ['--'] + args.pathspec,
-                          stdout=subprocess.PIPE, universal_newlines=True)
-for line in gitobj.stdout:
-    line = line.strip()
-    status = line[:2]
-    filespec = line[3:]
-
-    # Make sure the slash matches the OS; for Windows we need a backslash
-    filespec = os.path.normpath(filespec)
-
-    if status in ('??', '!!'):  # also safe to ignore: 'A ', ' M'
-        # filespec can be a dir, so we must iterate on filelist
-        for file in filelist:
-            if (
-                (filespec.endswith(os.sep) and file.startswith(filespec))
-                or (file == filespec)
-            ):
-                logger.debug("Ignoring: %s", file)
-                ignoredlist.add(file)
-    elif not args.force:
-        logger.critical(
-         "ERROR: There are local changes in the working directory.\n"
-         "This could lead to undesirable results for modified files.\n"
-         "Please, commit your changes (or use --force) and try again.\n"
-         "Aborting")
-        gitobj.kill()
-        sys.exit(1)
-
-if ignoredlist:
-    filelist -= ignoredlist
-    files = len(filelist)
-    logger.info("{:,} files to process after ignoring {:,}"
-                "".format(files, len(ignoredlist)))
 
 
 # Process the log until all files are 'touched'
@@ -396,7 +365,6 @@ if args.dirs:
     logger.info("{:13,} directories updated".format(dirtouches))
 
 if touches != totalfiles: logger.info("{:13,} files".format(totalfiles))
-if ignoredlist:           logger.info("{:13,} files ignored".format(len(ignoredlist)))
 if files:                 logger.info("{:13,} files missing".format(files))
 if errors:                logger.info("{:13,} file update errors".format(errors))
 
