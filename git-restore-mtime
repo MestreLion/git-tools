@@ -145,7 +145,7 @@ def normalize(path):
     Example on git output, this function reverts this:
     r'back\slash_double"quote_açaí' -> r'"back\\slash_double\"quote_a\303\247a\303\255"'
     """
-    if path.startswith('"'):
+    if path and path[0] == '"':
         # Python 2: path = path[1:-1].decode("string-escape")
         # Python 3: https://stackoverflow.com/a/46650050/624066
         path = (path[1:-1]                 # Remove enclosing double quotes
@@ -314,9 +314,8 @@ def parselog(merge=False, filterlist=[]):
         if not line: continue
 
         # File line
-        if line.startswith(':'):
-            # If line describes a rename, linetok has three tokens, otherwise
-            # two.
+        if line[0] == ':':  # Faster than line.startswith(':')
+            # If line describes a rename, linetok has three tokens, otherwise two
             linetok = line.split('\t')
             status = linetok[0]
             file = linetok[-1]
