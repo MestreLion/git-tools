@@ -275,6 +275,9 @@ filelist &= lsfileslist
 totalfiles = files = len(filelist)
 log.info("{0:,} files to be processed in work dir".format(totalfiles))
 
+if not filelist:
+    # Nothing to do. Exit silently and without errors, just like git does
+    sys.exit(0)
 
 # Process the log until all files are 'touched'
 log.debug("Line #\tLog #\tF.Left\tModification Time\tFile Name")
