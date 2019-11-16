@@ -226,7 +226,7 @@ lsfileslist = set(git.ls_files(args.pathspec))
 filelist = set()
 dirlist  = set()
 update_symlinks = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
-for path in (args.pathspec or ['.']):
+for path in (args.pathspec or (args.workdir or '.',)):
 
     # Normalize user input so ./doc = doc/ = doc/../doc/. = doc
     path = os.path.normpath(path)
@@ -271,6 +271,11 @@ for path in (args.pathspec or ['.']):
                 filelist.add(os.path.relpath(os.path.join(root, file), workdir))
 
 filelist &= lsfileslist
+
+# FIXME: When current dir is outside the worktree, e.g. using --work-tree, `git ls-files`
+# assume any relative pathspecs are to worktree root, while filelist routine above always
+# assume relative to current directory. As is, absolute paths are required, it's impossible
+# to match pathspecs using relative paths
 
 totalfiles = files = len(filelist)
 log.info("{0:,} files to be processed in work dir".format(totalfiles))
