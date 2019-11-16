@@ -101,7 +101,7 @@ parser.add_argument('--commit-time', '-c',
                     help='use commit time instead of author time')
 
 parser.add_argument('pathspec',
-                    nargs='*', default=[os.path.curdir],
+                    nargs='*',
                     help='only modify paths (dirs or files) matching PATHSPEC, '
                         'relative to current directory. '
                         'Default is to modify all non-ignored, tracked files.')
@@ -117,10 +117,6 @@ parser.add_argument('--git-dir',
                         'Default for most repositories <work-tree>/.git')
 
 args = parser.parse_args()
-
-gitcmd = ['git']
-if args.workdir: gitcmd.extend(('--work-tree', args.workdir))
-if args.gitdir : gitcmd.extend(('--git-dir',   args.gitdir))
 
 if   args.verbose: level = logger.DEBUG
 elif args.quiet:   level = logger.WARN
@@ -167,12 +163,45 @@ def isodate(secs):
     return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(secs))
 
 
-def git_ls_files(pathspec, gitcmd):
-    gitobj = subprocess.Popen(gitcmd + shlex.split('ls-files --full-name') +
-                              ['--'] + pathspec,
-                              stdout=subprocess.PIPE, universal_newlines=True)
-    for line in gitobj.stdout:
-        yield normalize(line.strip())
+class Git():
+    def __init__(self, workdir=None, gitdir=None):
+        self.gitcmd = ['git']
+        if workdir: self.gitcmd.extend(('--work-tree', workdir))
+        if gitdir : self.gitcmd.extend(('--git-dir',   gitdir))
+
+    def ls_files(self, pathlist=None):
+        return (normalize(_) for _ in self._run('ls-files --full-name', pathlist))
+
+    def is_dirty(self):
+        return bool(self._run('diff --no-ext-diff --quiet', output=False))
+
+    def repodirs(self):
+        return self._run('rev-parse --show-toplevel --absolute-git-dir', check=True)
+
+    def log(self, merge=False, first_parent=False, timeformat='%at', pathlist=None):
+        cmd = 'whatchanged --pretty={}'.format(timeformat)
+        if merge:        cmd += ' -m'
+        if first_parent: cmd += ' --first-parent'
+        return self._run(cmd, pathlist)
+
+    def _run(self, cmdstr, pathlist=None, output=True, check=False):
+        cmdlist = self.gitcmd + shlex.split(cmdstr)
+        if pathlist:
+            cmdlist.append('--')
+            cmdlist.extend(pathlist)
+        if not output:
+            return subprocess.call(cmdlist)
+        if check:
+            try:
+                stdout = subprocess.check_output(cmdlist, universal_newlines=True)
+                return stdout.splitlines()
+            except subprocess.CalledProcessError as e:
+                raise self.Error(e)
+        # TODO: When Python is bumped to 3.7, use text instead of universal_newlines
+        self.proc = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, universal_newlines=True)
+        return (_.strip() for _ in self.proc.stdout)
+
+    class Error(subprocess.CalledProcessError): pass
 
 
 # Main Logic ##################################################################
@@ -183,22 +212,17 @@ start = time.time()  # yes, Wall time. CPU time is not realistic for users.
 loglines = commits = touches = errors = dirtouches = direrrors = 0
 stepmissing = 100
 
+git = Git(args.workdir, args.gitdir)
+
 # First things first: Where and Who are we?
 try:
-    workdir, gitdir = subprocess.check_output(gitcmd + shlex.split(
-                    'rev-parse --show-toplevel --git-dir'),
-                    universal_newlines=True).split('\n')[:2]
-
-    workdir = os.path.abspath(workdir)
-    gitdir  = os.path.abspath(gitdir)
-
-except subprocess.CalledProcessError as e:
-    # rev-parse couldn't find git repo, and already informed user.
-    # So we just...
+    workdir, gitdir = git.repodirs()
+except git.Error as e:
+    # Not in a git repository, and git already informed user on stderr. So we just...
     sys.exit(e.returncode)
 
 # Do not work on dirty repositories, unless --force
-if not args.force and subprocess.call(gitcmd + shlex.split('diff --no-ext-diff --quiet')):
+if not args.force and git.is_dirty():
     logger.critical(
      "ERROR: There are local changes in the working directory.\n"
      "This could lead to undesirable results for modified files.\n"
@@ -207,14 +231,14 @@ if not args.force and subprocess.call(gitcmd + shlex.split('diff --no-ext-diff -
     sys.exit(1)
 
 # Get the files managed by git
-lsfileslist = set(git_ls_files(args.pathspec, gitcmd))
+lsfileslist = set(git.ls_files(args.pathspec))
 
 # List files matching user pathspec, relative to current directory
 # git commands always print paths relative to work tree root
 filelist = set()
 dirlist  = set()
 update_symlinks = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
-for path in args.pathspec:
+for path in (args.pathspec or ['.']):
 
     # Normalize user input so ./doc = doc/ = doc/../doc/. = doc
     path = os.path.normpath(path)
@@ -266,18 +290,12 @@ logger.info("{0:,} files to be processed in work dir".format(totalfiles))
 
 # Process the log until all files are 'touched'
 logger.debug("Line #\tLog #\tF.Left\tModification Time\tFile Name")
-def parselog(merge=False, filterlist=[]):
+def parselog(merge=False, filterlist=None):
     global loglines, commits, touches, errors, dirtouches, direrrors, files
 
-    gitobj = subprocess.Popen(gitcmd + shlex.split('whatchanged --pretty={}'.format(args.timeformat)) +
-                              (['-m'] if merge else []) +
-                              (['--first-parent'] if args.first_parent else []) +
-                              ['--'] + filterlist,
-                              stdout=subprocess.PIPE, universal_newlines=True)
     mtime = 0
-    for line in gitobj.stdout:
+    for line in git.log(merge, args.first_parent, args.timeformat, filterlist):
         loglines += 1
-        line = line.strip()
 
         # Blank line between Date and list of files
         if not line: continue
@@ -326,12 +344,8 @@ def parselog(merge=False, filterlist=[]):
 
         # All files done?
         if not files:
-            break
-
-    try:
-        gitobj.terminate()
-    except OSError:
-        pass
+            git.proc.terminate()  # hackish, but does the job. Not needed anyway
+            return
 
 
 parselog(args.merge, args.pathspec)
