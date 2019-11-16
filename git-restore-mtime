@@ -180,7 +180,7 @@ class Git():
                 stdout = subprocess.check_output(cmdlist, universal_newlines=True)
                 return stdout.splitlines()
             except subprocess.CalledProcessError as e:
-                raise self.Error(e)
+                raise self.Error(e.returncode, e.cmd, e.output, e.stderr)
         # TODO: When Python is bumped to 3.7, use text instead of universal_newlines
         self.proc = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, universal_newlines=True)
         return (_.strip() for _ in self.proc.stdout)
