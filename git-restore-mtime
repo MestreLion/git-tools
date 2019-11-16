@@ -39,90 +39,73 @@ import time
 
 # Command-line interface ######################################################
 
-parser = argparse.ArgumentParser(
-    description='Restore original modification time of files based on '
-                'the date of the most recent commit that modified them. '
-                'Useful when generating release tarballs.')
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="""Restore original modification time of files based on the date of the
+        most recent commit that modified them. Useful when generating release tarballs.""")
 
-parser.add_argument('--quiet', '-q',
-                    action="store_true",
-                    help='suppress informative messages and summary statistics.')
+    parser.add_argument('--quiet', '-q', action="store_true",
+        help="Suppress informative messages and summary statistics.")
 
-parser.add_argument('--verbose', '-v',
-                    action="store_true",
-                    help='print additional information for each processed file. '
-                    'Overrides --quiet.')
+    parser.add_argument('--verbose', '-v', action="store_true",
+        help="Print additional information for each processed file. Overrides --quiet.")
 
-parser.add_argument('--force', '-f',
-                    action="store_true",
-                    help='force execution on trees with uncommitted changes.')
+    parser.add_argument('--force', '-f', action="store_true",
+        help="Force execution on trees with uncommitted changes.")
 
-parser.add_argument('--merge', '-m',
-                    action="store_true",
-                    help='include merge commits. Leads to more recent mtimes '
-                        'and more files per commit, thus with the same mtime '
-                        '(which may or may not be what you want). Including '
-                        'merge commits may lead to less commits being evaluated '
-                        '(all files are found sooner), which improves performance, '
-                        'sometimes substantially. But since merge commits are '
-                        'usually huge, processing them may also take longer, '
-                        'sometimes substantially. By default merge logs are only '
-                        'used for files missing from regular commit logs.')
+    parser.add_argument('--merge', '-m', action="store_true",
+        help="""Include merge commits. Leads to more recent mtimes and more files per
+        commit, thus with the same mtime (which may or may not be what you want). Including
+        merge commits may lead to less commits being evaluated (all files are found sooner),
+        which improves performance, sometimes substantially. But since merge commits are
+        usually huge, processing them may also take longer, sometimes substantially.
+        By default merge logs are only used for files missing from regular commit logs.""")
 
-parser.add_argument('--first-parent',
-                    action="store_true",
-                    help='pass --first-parent to git whatchanged to hide the '
-                        'second parent from the merge commit logs. Only has any '
-                        'effect if --merge is also specified or --skip-missing '
-                        'is not specified and there were files not found in regular '
-                        'commit logs.')
+    parser.add_argument('--first-parent', action="store_true",
+        help="""Consider only the first parent, the "main branch", when parsing merge
+        commit logs. Only effective when merge commits are included in the log, either
+        by --merge or to find missing files after first log parse. See --skip-missing.""")
 
-parser.add_argument('--skip-missing', '-s',
-                    action="store_false", default=True, dest='missing',
-                    help='do not try to find missing files. If some files were '
-                        'not found in regular commit logs, by default it re-tries '
-                        'using merge commit logs for these files (if --merge was '
-                        'not used already). This option disables this behavior, '
-                        'which may slightly improve performance, but files '
-                        'found only in merge commits will not be updated.')
+    parser.add_argument('--skip-missing', '-s',
+        action="store_false", default=True, dest="missing",
+        help="""Do not try to find missing files. If some files were not found in regular
+        commit logs, by default it re-tries using merge commit logs for these files (if
+        --merge was not already used). This option disables this behavior, which may slightly
+        improve performance, but files found only in merge commits will not be updated.""")
 
-parser.add_argument('--no-directories', '-D',
-                    action="store_false", default=True, dest='dirs',
-                    help='do not update directory mtime for files created, '
-                        'renamed or deleted in it. Note: just modifying a file '
-                        'will not update its directory mtime.')
+    parser.add_argument('--no-directories', '-D',
+        action="store_false", default=True, dest='dirs',
+        help="""Do not update directory mtime for files created, renamed or deleted in it.
+        Note: just modifying a file will not update its directory mtime.""")
 
-parser.add_argument('--test', '-t',
-                    action="store_true", default=False, dest='test',
-                    help='test run: do not actually update any file')
+    parser.add_argument('--test', '-t', action="store_true", default=False, dest='test',
+        help="Test run: do not actually update any file")
 
-parser.add_argument('--commit-time', '-c',
-                    action='store_const', const='%ct', default='%at', dest='timeformat',
-                    help='use commit time instead of author time')
+    parser.add_argument('--commit-time', '-c',
+        action='store_const', const='%ct', default='%at', dest='timeformat',
+        help="Use commit time instead of author time")
 
-parser.add_argument('pathspec',
-                    nargs='*',
-                    help='only modify paths (dirs or files) matching PATHSPEC, '
-                        'relative to current directory. '
-                        'Default is to modify all non-ignored, tracked files.')
+    parser.add_argument('pathspec', nargs='*', metavar='PATH',
+        help="""Only modify paths matching PATH, directories or files, relative to current
+        directory. Default is to modify all files handled by git, ignoring untracked files
+        and submodules.""")
 
-parser.add_argument('--work-tree',
-                    dest='workdir',
-                    help='specify where the work tree is. '
-                        'Default for most repositories is current directory.')
+    parser.add_argument('--work-tree', dest='workdir',
+        help="Path to the work tree, if not current directory or one of its parents.")
 
-parser.add_argument('--git-dir',
-                    dest='gitdir',
-                    help='specify where the git repository is. '
-                        'Default for most repositories <work-tree>/.git')
+    parser.add_argument('--git-dir', dest='gitdir',
+        help="Path to the git repository, if not the default <work-tree-root>/.git")
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-if   args.verbose: level = logger.DEBUG
-elif args.quiet:   level = logger.WARN
-else:              level = logger.INFO
+    if   args.verbose: args.loglevel = logger.DEBUG
+    elif args.quiet:   args.loglevel = logger.WARN
+    else:              args.loglevel = logger.INFO
 
-logger.basicConfig(level=level, format='%(message)s')
+    return args
+
+args = parse_args()
+logger.basicConfig(level=args.loglevel, format='%(message)s')
 
 
 # Helper functions #########################################################
