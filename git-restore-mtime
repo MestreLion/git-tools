@@ -17,15 +17,57 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program. See <http://www.gnu.org/licenses/gpl.html>
 #
-# Change the modification time (mtime) of all files in work tree, based on the
-# date of the most recent commit that modified the file.
-#
-# Useful prior to generating release tarballs, so each file is archived with a
-# date that is similar to the date when the file was actually last modified,
-# assuming the actual modification date and its commit date are close.
+"""
+Change the modification time (mtime) of all files in work tree, based on the
+date of the most recent commit that modified the file.
 
-# By default ignores all ignored and untracked files, and also refuses to work
-# on trees with uncommitted changes.
+Useful prior to generating release tarballs, so each file is archived with a
+date that is similar to the date when the file was actually last modified,
+assuming the actual modification date and its commit date are close.
+
+By default ignores all ignored and untracked files, and also refuses to work
+on trees with uncommitted changes.
+"""
+
+# TODO:
+# - Gracefully abort on KeyboardInterrupt (CTRL+C), with sys.exit(1). Require all code
+#   to be wrapped in main() function
+# - Add -z on git whatchanged/ls-files so we don't deal with filename decode/OS normalization
+# - When Python is bumped to 3.7, use text instead of universal_newlines on subprocess
+# - Update "Statistics for some large projects" with modern hardware and repositories.
+# - Create a README.md for git-restore-mtime alone. It deserves extensive documentation
+#   - Move Statistics there
+
+# FIXME:
+# - Given lsfileslist, why do we still need filelist/os.walk routine? Should be changed to:
+#   - Process files on lsfileslist. It already discarded paths outside repo and '.git/'
+#   repo dir, and any missing files on disk makes repo dirty, already checked above.
+#   - dirlist should also be extracted from lsfileslist.
+#   - Discard symlinks on unsupported platforms
+# - When current dir is outside the worktree, e.g. using --work-tree, `git ls-files`
+#   assume any relative pathspecs are to worktree root, while filelist routine always
+#   assume relative to current directory. As is, absolute paths are required, it's
+#   impossible to match pathspecs using relative paths
+# - Renames and mode changes should not change file mtime:
+#   - Must check on status 'R100' and mode changes with same blobs
+#   - Should require status to be (A, C, M, R<100, T). D will never be processed as
+#     filelist is a subset of lsfileslist.
+# - Check file (A, D) for directory mtime is not sufficient:
+#   - Renames also change dir mtime, unless rename was on a parent dir
+#   - If most recent change of all files in a dir was a [M]odification,
+#     dir might not be touched at all.
+#   - Dirs containing only subdirectories but no direct files will also
+#     not be touched. They're files' [grand]parent dir, but never their dirname().
+#   - Some solutions:
+#     - After files done, perform some dir processing for missing dirs, finding latest
+#       file (A, D, R)
+#     - Simple approach: dir mtime is most recent child (dir or file) mtime
+#     - Use a virtual concept of "created at most at" to fill missing info, bubble up
+#       to parents and grandparents
+#   - When handling [grand]parent dirs, stay inside <pathspec>
+# - Better handling of merge commits. `-m` is plain *wrong*. `-c/--cc` is perfect, but
+#   painfully slow. First pass without merge commits is not accurate. Maybe add a new
+#   `--accurate` mode for `--cc`?
 
 if __name__ != "__main__":
     raise ImportError("{} should not be used as a module.".format(__name__))
@@ -181,7 +223,6 @@ class Git():
                 return stdout.splitlines()
             except subprocess.CalledProcessError as e:
                 raise self.Error(e.returncode, e.cmd, e.output, e.stderr)
-        # TODO: When Python is bumped to 3.7, use text instead of universal_newlines
         self.proc = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, universal_newlines=True)
         return (_.strip() for _ in self.proc.stdout)
 
@@ -272,11 +313,6 @@ for path in (args.pathspec or (args.workdir or '.',)):
 
 filelist &= lsfileslist
 
-# FIXME: When current dir is outside the worktree, e.g. using --work-tree, `git ls-files`
-# assume any relative pathspecs are to worktree root, while filelist routine above always
-# assume relative to current directory. As is, absolute paths are required, it's impossible
-# to match pathspecs using relative paths
-
 totalfiles = files = len(filelist)
 log.info("{0:,} files to be processed in work dir".format(totalfiles))
 
@@ -362,7 +398,7 @@ if filelist:
 
 
 # Final statistics
-# TODO: use git-log --before=mtime to brag about skipped log entries
+# Suggestion: use git-log --before=mtime to brag about skipped log entries
 log.info(
     "Statistics:\n"
     "{:13,.2f} seconds\n"
