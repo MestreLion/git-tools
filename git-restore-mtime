@@ -181,7 +181,11 @@ def normalize(path):
 def touch(path, mtime, test=False):
     """The actual mtime update"""
     if test: return
-    os.utime(path, (mtime, mtime), follow_symlinks=False)
+    supports_follow_symlinks = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
+    if supports_follow_symlinks:
+      os.utime(path, (mtime, mtime), follow_symlinks=False)
+    else:
+      os.utime(path, (mtime, mtime))
 
 
 def isodate(secs):
