@@ -272,8 +272,8 @@ for path in (args.pathspec or (args.workdir or '.',)):
     # Normalize user input so ./doc = doc/ = doc/../doc/. = doc
     path = os.path.normpath(path)
 
-    # Is path inside the work tree?
-    if os.path.commonprefix([workdir, os.path.abspath(path)]) != workdir:
+    # Is path inside the work tree? NOTE: replace Windows escaped backslash with forward slash
+    if os.path.commonprefix([workdir, os.path.abspath(path).replace('\\', '/')]) != workdir:
         log.warning("WARNING: Skipping pathspec outside work tree: %s", path)
         continue
 
@@ -294,7 +294,7 @@ for path in (args.pathspec or (args.workdir or '.',)):
     # dir
     else:
         for root, subdirs, files in os.walk(path):
-            if gitdir in [os.path.abspath(os.path.join(root, subdir))
+            if gitdir in [os.path.abspath(os.path.join(root, subdir).replace('\\', '/'))
                           for subdir in subdirs]:
                 subdirs.remove(os.path.basename(gitdir))
 
@@ -309,7 +309,7 @@ for path in (args.pathspec or (args.workdir or '.',)):
 
             for file in files:
                 # Always add them relative to worktree root
-                filelist.add(os.path.relpath(os.path.join(root, file), workdir))
+                filelist.add(os.path.relpath(os.path.join(root, file).replace('\\', '/'), workdir))
 
 filelist &= lsfileslist
 
@@ -349,7 +349,7 @@ def parselog(args, merge=False, filterlist=None):
                 filelist.remove(file)
                 files -= 1
                 try:
-                    touch(os.path.join(workdir, file), mtime, args.test)
+                    touch(os.path.join(workdir, file).replace('\\', '/'), mtime, args.test)
                     touches += 1
                 except Exception as e:
                     log.error("ERROR: %s", e)
@@ -363,7 +363,7 @@ def parselog(args, merge=False, filterlist=None):
                                  isodate(mtime), "{}/".format(dirname or '.'))
                     dirlist.remove(dirname)
                     try:
-                        touch(os.path.join(workdir, dirname), mtime, args.test)
+                        touch(os.path.join(workdir, dirname).replace('\\', '/'), mtime, args.test)
                         dirtouches += 1
                     except Exception as e:
                         log.error("ERROR: %s", e)
