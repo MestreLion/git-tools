@@ -366,11 +366,11 @@ def parselog(args, merge=False, filterlist=None):
             file = normalize(file)
 
             if file in filelist:
+                files -= 1
                 log.debug("%d\t%d\t%d\t%s\t%s",
                              loglines, commits, files,
                              isodate(mtime), file)
                 filelist.remove(file)
-                files -= 1
                 try:
                     touch(os.path.join(workdir, file), mtime, args.test)
                     touches += 1
