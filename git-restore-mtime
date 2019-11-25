@@ -79,6 +79,10 @@ import argparse
 import time
 
 
+# Update symlinks only if the OS supports not following them
+UPDATE_SYMLINKS = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
+
+
 # Command-line interface ######################################################
 
 def parse_args():
@@ -178,10 +182,16 @@ def normalize(path):
     return os.path.normpath(path)
 
 
-def touch(path, mtime, test=False):
-    """The actual mtime update"""
-    if test: return
-    os.utime(path, (mtime, mtime), follow_symlinks=False)
+if UPDATE_SYMLINKS:
+    def touch(path, mtime, test=False):
+        """The actual mtime update"""
+        if test: return
+        os.utime(path, (mtime, mtime), follow_symlinks=False)
+else:
+    def touch(path, mtime, test=False):
+        """The actual mtime update"""
+        if test: return
+        os.utime(path, (mtime, mtime))
 
 
 def isodate(secs):
@@ -201,7 +211,8 @@ class Git():
         return bool(self._run('diff --no-ext-diff --quiet', output=False))
 
     def repodirs(self):
-        return self._run('rev-parse --show-toplevel --absolute-git-dir', check=True)
+        return (os.path.normpath(_) for _ in
+                self._run('rev-parse --show-toplevel --absolute-git-dir', check=True))
 
     def log(self, merge=False, first_parent=False, commit_time=False, pathlist=None):
         cmd = 'whatchanged --pretty={}'.format('%ct' if commit_time else '%at')
@@ -266,7 +277,6 @@ lsfileslist = set(git.ls_files(args.pathspec))
 # git commands always print paths relative to work tree root
 filelist = set()
 dirlist  = set()
-update_symlinks = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
 for path in (args.pathspec or (args.workdir or '.',)):
 
     # Normalize user input so ./doc = doc/ = doc/../doc/. = doc
@@ -285,7 +295,7 @@ for path in (args.pathspec or (args.workdir or '.',)):
     # file or symlink (to file, to dir or broken - git handles the same way)
     islink = os.path.islink(path)
     if os.path.isfile(path) or islink:
-        if islink and not update_symlinks:
+        if islink and not UPDATE_SYMLINKS:
             log.warning("WARNING: Skipping symlink, OS does not support update: %s", path)
             continue
         # Always add them relative to worktree root
