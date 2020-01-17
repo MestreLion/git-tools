@@ -143,6 +143,13 @@ def parse_args():
     parser.add_argument('--git-dir', dest='gitdir',
         help="Path to the git repository, if not the default <work-tree-root>/.git")
 
+    parser.add_argument('--skip-older-then', dest="skip_older_then", type=int,
+        help="""Only modify files, which are not older then this value from current time (in seconds).
+        If not much files are required to be restored - script will work significantly faster.
+        Useful to run script on CI, which can eventually switch workspace to different branch,
+        but mostly performs builds on the same one (e.g. master).
+        """)
+
     return parser.parse_args()
 
 
@@ -277,6 +284,7 @@ lsfileslist = set(git.ls_files(args.pathspec))
 # git commands always print paths relative to work tree root
 filelist = set()
 dirlist  = set()
+current_time = time.time()
 for path in (args.pathspec or (args.workdir or '.',)):
 
     # Normalize user input so ./doc = doc/ = doc/../doc/. = doc
@@ -318,8 +326,15 @@ for path in (args.pathspec or (args.workdir or '.',)):
                 dirlist.add(dirname)
 
             for file in files:
+                file_path = os.path.join(root, file)
+
+                if args.skip_older_then and os.path.exists(file_path):
+                    file_mtime = os.path.getmtime(file_path)
+                    # skip files which were modified earlier, then given threshold
+                    if current_time - file_mtime > args.skip_older_then:
+                        continue
                 # Always add them relative to worktree root
-                filelist.add(os.path.relpath(os.path.join(root, file), workdir))
+                filelist.add(os.path.relpath(file_path, workdir))
 
 filelist &= lsfileslist
 
