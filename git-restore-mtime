@@ -362,7 +362,8 @@ def main():
         if args.missing and not args.merge:
             filterlist = list(filelist)
             for i in range(0, len(filterlist), STEPMISSING):
-                parselog(args, merge=True, filterlist=filterlist[i:i+STEPMISSING])
+                parselog(filelist, dirlist, stats, git,
+                         merge=True, filterlist=filterlist[i:i+STEPMISSING])
 
         # Still missing some?
         for file in filelist:
