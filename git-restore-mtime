@@ -76,6 +76,7 @@ import time
 
 # Update symlinks only if the OS supports not following them
 UPDATE_SYMLINKS = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
+STEPMISSING = 100
 
 
 # Command-line interface ######################################################
@@ -245,11 +246,9 @@ class Git():
 
 
 def parselog(args, merge=False, filterlist=None):
-    global loglines, commits, touches, errors, dirtouches, direrrors, files
-
     mtime = 0
     for line in git.log(merge, args.first_parent, args.commit_time, filterlist):
-        loglines += 1
+        stats['loglines'] += 1
 
         # Blank line between Date and list of files
         if not line: continue
@@ -265,39 +264,39 @@ def parselog(args, merge=False, filterlist=None):
             file = normalize(file)
 
             if file in filelist:
-                files -= 1
+                stats['files'] -= 1
                 log.debug("%d\t%d\t%d\t%s\t%s",
-                             loglines, commits, files,
+                             stats['loglines'], stats['commits'], stats['files'],
                              isodate(mtime), file)
                 filelist.remove(file)
                 try:
                     touch(os.path.join(workdir, file), mtime, args.test)
-                    touches += 1
+                    stats['touches'] += 1
                 except Exception as e:
                     log.error("ERROR: %s", e)
-                    errors += 1
+                    stats['errors'] += 1
 
             if args.dirs:
                 dirname = os.path.dirname(file)
                 if status[-1] in ('A', 'D') and dirname in dirlist:
                     log.debug("%d\t%d\t-\t%s\t%s",
-                                 loglines, commits,
+                                 stats['loglines'], stats['commits'],
                                  isodate(mtime), "{}/".format(dirname or '.'))
                     dirlist.remove(dirname)
                     try:
                         touch(os.path.join(workdir, dirname), mtime, args.test)
-                        dirtouches += 1
+                        stats['dirtouches'] += 1
                     except Exception as e:
                         log.error("ERROR: %s", e)
-                        direrrors += 1
+                        stats['direrrors'] += 1
 
         # Date line
         else:
-            commits += 1
+            stats['commits'] += 1
             mtime = int(line)
 
         # All files done?
-        if not files:
+        if not stats['files']:
             git.proc.terminate()  # hackish, but does the job. Not needed anyway
             return
 
@@ -310,9 +309,7 @@ log.trace("Arguments: %s", args)
 
 # UI done, it's show time!
 start = time.time()  # yes, Wall time. CPU time is not realistic for users.
-
-loglines = commits = touches = errors = dirtouches = direrrors = 0
-stepmissing = 100
+stats = {_: 0 for _ in ('loglines', 'commits', 'touches', 'errors', 'dirtouches', 'direrrors')}
 
 git = Git(args.workdir, args.gitdir)
 
@@ -355,8 +352,8 @@ else:
         filelist.add(path)
         dirlist.add(os.path.dirname(path))
 
-totalfiles = files = len(filelist)
-log.info("{0:,} files to be processed in work dir".format(totalfiles))
+stats['totalfiles'] = stats['files'] = len(filelist)
+log.info("{0:,} files to be processed in work dir".format(stats['totalfiles']))
 
 if not filelist:
     # Nothing to do. Exit silently and without errors, just like git does
@@ -368,18 +365,16 @@ parselog(args, args.merge, args.pathspec)
 
 # Missing files
 if filelist:
-
     # Try to find them in merge logs, if not done already
     # (usually HUGE, thus MUCH slower!)
     if args.missing and not args.merge:
         filterlist = list(filelist)
-        for i in range(0, len(filterlist), stepmissing):
-            parselog(args, merge=True, filterlist=filterlist[i:i+stepmissing])
+        for i in range(0, len(filterlist), STEPMISSING):
+            parselog(args, merge=True, filterlist=filterlist[i:i+STEPMISSING])
 
     # Still missing some?
     for file in filelist:
         log.warning("WARNING: not found in log: %s", file)
-
 
 # Final statistics
 # Suggestion: use git-log --before=mtime to brag about skipped log entries
@@ -388,17 +383,17 @@ log.info(
     "{:13,.2f} seconds\n"
     "{:13,} log lines processed\n"
     "{:13,} commits evaluated"
-    "".format(time.time()-start, loglines, commits))
+    "".format(time.time()-start, stats['loglines'], stats['commits']))
 
 if args.dirs:
-    if direrrors: log.info("{:13,} directory update errors".format(direrrors))
-    log.info("{:13,} directories updated".format(dirtouches))
+    if stats['direrrors']: log.info("{:13,} directory update errors".format(stats['direrrors']))
+    log.info("{:13,} directories updated".format(stats['dirtouches']))
 
-if touches != totalfiles: log.info("{:13,} files".format(totalfiles))
-if files:                 log.info("{:13,} files missing".format(files))
-if errors:                log.info("{:13,} file update errors".format(errors))
+if stats['touches'] != stats['totalfiles']: log.info("{:13,} files".format(stats['totalfiles']))
+if stats['files']:                          log.info("{:13,} files missing".format(stats['files']))
+if stats['errors']:                         log.info("{:13,} file update errors".format(stats['errors']))
 
-log.info("{:13,} files updated".format(touches))
+log.info("{:13,} files updated".format(stats['touches']))
 
 if args.test:
     log.info("TEST RUN - No files modified!")
