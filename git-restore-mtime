@@ -148,7 +148,7 @@ def parse_args():
     return parser.parse_args()
 
 
-# Helper functions #########################################################
+# Helper functions ############################################################
 
 def setup_logging(args):
     TRACE = logging.DEBUG // 2
@@ -200,6 +200,8 @@ def isodate(secs):
     return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(secs))
 
 
+# Git class and parselog(), the heart of the script ###########################
+
 class Git():
     def __init__(self, workdir=None, gitdir=None):
         self.gitcmd = ['git']
@@ -240,6 +242,64 @@ class Git():
         return (_.strip() for _ in self.proc.stdout)
 
     class Error(subprocess.CalledProcessError): pass
+
+
+def parselog(args, merge=False, filterlist=None):
+    global loglines, commits, touches, errors, dirtouches, direrrors, files
+
+    mtime = 0
+    for line in git.log(merge, args.first_parent, args.commit_time, filterlist):
+        loglines += 1
+
+        # Blank line between Date and list of files
+        if not line: continue
+
+        # File line
+        if line[0] == ':':  # Faster than line.startswith(':')
+            # If line describes a rename, linetok has three tokens, otherwise two
+            linetok = line.split('\t')
+            status = linetok[0]
+            file = linetok[-1]
+
+            # Handles non-ASCII chars and OS path separator
+            file = normalize(file)
+
+            if file in filelist:
+                files -= 1
+                log.debug("%d\t%d\t%d\t%s\t%s",
+                             loglines, commits, files,
+                             isodate(mtime), file)
+                filelist.remove(file)
+                try:
+                    touch(os.path.join(workdir, file), mtime, args.test)
+                    touches += 1
+                except Exception as e:
+                    log.error("ERROR: %s", e)
+                    errors += 1
+
+            if args.dirs:
+                dirname = os.path.dirname(file)
+                if status[-1] in ('A', 'D') and dirname in dirlist:
+                    log.debug("%d\t%d\t-\t%s\t%s",
+                                 loglines, commits,
+                                 isodate(mtime), "{}/".format(dirname or '.'))
+                    dirlist.remove(dirname)
+                    try:
+                        touch(os.path.join(workdir, dirname), mtime, args.test)
+                        dirtouches += 1
+                    except Exception as e:
+                        log.error("ERROR: %s", e)
+                        direrrors += 1
+
+        # Date line
+        else:
+            commits += 1
+            mtime = int(line)
+
+        # All files done?
+        if not files:
+            git.proc.terminate()  # hackish, but does the job. Not needed anyway
+            return
 
 
 # Main Logic ##################################################################
@@ -304,64 +364,6 @@ if not filelist:
 
 # Process the log until all files are 'touched'
 log.debug("Line #\tLog #\tF.Left\tModification Time\tFile Name")
-def parselog(args, merge=False, filterlist=None):
-    global loglines, commits, touches, errors, dirtouches, direrrors, files
-
-    mtime = 0
-    for line in git.log(merge, args.first_parent, args.commit_time, filterlist):
-        loglines += 1
-
-        # Blank line between Date and list of files
-        if not line: continue
-
-        # File line
-        if line[0] == ':':  # Faster than line.startswith(':')
-            # If line describes a rename, linetok has three tokens, otherwise two
-            linetok = line.split('\t')
-            status = linetok[0]
-            file = linetok[-1]
-
-            # Handles non-ASCII chars and OS path separator
-            file = normalize(file)
-
-            if file in filelist:
-                files -= 1
-                log.debug("%d\t%d\t%d\t%s\t%s",
-                             loglines, commits, files,
-                             isodate(mtime), file)
-                filelist.remove(file)
-                try:
-                    touch(os.path.join(workdir, file), mtime, args.test)
-                    touches += 1
-                except Exception as e:
-                    log.error("ERROR: %s", e)
-                    errors += 1
-
-            if args.dirs:
-                dirname = os.path.dirname(file)
-                if status[-1] in ('A', 'D') and dirname in dirlist:
-                    log.debug("%d\t%d\t-\t%s\t%s",
-                                 loglines, commits,
-                                 isodate(mtime), "{}/".format(dirname or '.'))
-                    dirlist.remove(dirname)
-                    try:
-                        touch(os.path.join(workdir, dirname), mtime, args.test)
-                        dirtouches += 1
-                    except Exception as e:
-                        log.error("ERROR: %s", e)
-                        direrrors += 1
-
-        # Date line
-        else:
-            commits += 1
-            mtime = int(line)
-
-        # All files done?
-        if not files:
-            git.proc.terminate()  # hackish, but does the job. Not needed anyway
-            return
-
-
 parselog(args, args.merge, args.pathspec)
 
 # Missing files
