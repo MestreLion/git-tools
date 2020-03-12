@@ -245,7 +245,7 @@ class Git():
     class Error(subprocess.CalledProcessError): pass
 
 
-def parselog(args, merge=False, filterlist=None):
+def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
     mtime = 0
     for line in git.log(merge, args.first_parent, args.commit_time, filterlist):
         stats['loglines'] += 1
@@ -303,97 +303,101 @@ def parselog(args, merge=False, filterlist=None):
 
 # Main Logic ##################################################################
 
+def main(args):
+    start = time.time()  # yes, Wall time. CPU time is not realistic for users.
+    stats = {_: 0 for _ in ('loglines', 'commits', 'touches', 'errors', 'dirtouches', 'direrrors')}
+
+    git = Git(args.workdir, args.gitdir)
+
+    # First things first: Where and Who are we?
+    try:
+        workdir, gitdir = git.repodirs()
+    except git.Error as e:
+        # Not in a git repository, and git already informed user on stderr. So we just...
+        sys.exit(e.returncode)
+
+    # Do not work on dirty repositories, unless --force
+    if not args.force and git.is_dirty():
+        log.critical(
+         "ERROR: There are local changes in the working directory.\n"
+         "This could lead to undesirable results for modified files.\n"
+         "Please, commit your changes (or use --force) and try again.\n"
+         "Aborting")
+        sys.exit(1)
+
+    # Get the files managed by git and build file and dir list to be processed
+    filelist = set()
+    dirlist  = set()
+    if UPDATE_SYMLINKS and not args.skip_older_than:
+        filelist = set(git.ls_files(args.pathspec))
+        dirlist  = set(os.path.dirname(_) for _ in filelist)
+    else:
+        for path in git.ls_files(args.pathspec):
+            fullpath = os.path.join(workdir, path)
+
+            # Symlink (to file, to dir or broken - git handles the same way)
+            if not UPDATE_SYMLINKS and os.path.islink(fullpath):
+                log.warning("WARNING: Skipping symlink, OS does not support update: %s", path)
+                continue
+
+            # skip files which are older than given threshold
+            if args.skip_older_than and start - os.path.getmtime(fullpath) > args.skip_older_than:
+                continue
+
+            # Always add them relative to worktree root
+            filelist.add(path)
+            dirlist.add(os.path.dirname(path))
+
+    stats['totalfiles'] = stats['files'] = len(filelist)
+    log.info("{0:,} files to be processed in work dir".format(stats['totalfiles']))
+
+    if not filelist:
+        # Nothing to do. Exit silently and without errors, just like git does
+        sys.exit(0)
+
+    # Process the log until all files are 'touched'
+    log.debug("Line #\tLog #\tF.Left\tModification Time\tFile Name")
+    parselog(filelist, dirlist, stats, git, args.merge, args.pathspec)
+
+    # Missing files
+    if filelist:
+        # Try to find them in merge logs, if not done already
+        # (usually HUGE, thus MUCH slower!)
+        if args.missing and not args.merge:
+            filterlist = list(filelist)
+            for i in range(0, len(filterlist), STEPMISSING):
+                parselog(args, merge=True, filterlist=filterlist[i:i+STEPMISSING])
+
+        # Still missing some?
+        for file in filelist:
+            log.warning("WARNING: not found in log: %s", file)
+
+    # Final statistics
+    # Suggestion: use git-log --before=mtime to brag about skipped log entries
+    log.info(
+        "Statistics:\n"
+        "{:13,.2f} seconds\n"
+        "{:13,} log lines processed\n"
+        "{:13,} commits evaluated"
+        "".format(time.time()-start, stats['loglines'], stats['commits']))
+
+    if args.dirs:
+        if stats['direrrors']: log.info("{:13,} directory update errors".format(stats['direrrors']))
+        log.info("{:13,} directories updated".format(stats['dirtouches']))
+
+    if stats['touches'] != stats['totalfiles']: log.info("{:13,} files".format(stats['totalfiles']))
+    if stats['files']:                          log.info("{:13,} files missing".format(stats['files']))
+    if stats['errors']:                         log.info("{:13,} file update errors".format(stats['errors']))
+
+    log.info("{:13,} files updated".format(stats['touches']))
+
+    if args.test:
+        log.info("TEST RUN - No files modified!")
+
+
 args = parse_args()
 log = setup_logging(args)
 log.trace("Arguments: %s", args)
 
 # UI done, it's show time!
-start = time.time()  # yes, Wall time. CPU time is not realistic for users.
-stats = {_: 0 for _ in ('loglines', 'commits', 'touches', 'errors', 'dirtouches', 'direrrors')}
-
-git = Git(args.workdir, args.gitdir)
-
-# First things first: Where and Who are we?
-try:
-    workdir, gitdir = git.repodirs()
-except git.Error as e:
-    # Not in a git repository, and git already informed user on stderr. So we just...
-    sys.exit(e.returncode)
-
-# Do not work on dirty repositories, unless --force
-if not args.force and git.is_dirty():
-    log.critical(
-     "ERROR: There are local changes in the working directory.\n"
-     "This could lead to undesirable results for modified files.\n"
-     "Please, commit your changes (or use --force) and try again.\n"
-     "Aborting")
-    sys.exit(1)
-
-# Get the files managed by git and build file and dir list to be processed
-filelist = set()
-dirlist  = set()
-if UPDATE_SYMLINKS and not args.skip_older_than:
-    filelist = set(git.ls_files(args.pathspec))
-    dirlist  = set(os.path.dirname(_) for _ in filelist)
-else:
-    for path in git.ls_files(args.pathspec):
-        fullpath = os.path.join(workdir, path)
-
-        # Symlink (to file, to dir or broken - git handles the same way)
-        if not UPDATE_SYMLINKS and os.path.islink(fullpath):
-            log.warning("WARNING: Skipping symlink, OS does not support update: %s", path)
-            continue
-
-        # skip files which are older than given threshold
-        if args.skip_older_than and start - os.path.getmtime(fullpath) > args.skip_older_than:
-            continue
-
-        # Always add them relative to worktree root
-        filelist.add(path)
-        dirlist.add(os.path.dirname(path))
-
-stats['totalfiles'] = stats['files'] = len(filelist)
-log.info("{0:,} files to be processed in work dir".format(stats['totalfiles']))
-
-if not filelist:
-    # Nothing to do. Exit silently and without errors, just like git does
-    sys.exit(0)
-
-# Process the log until all files are 'touched'
-log.debug("Line #\tLog #\tF.Left\tModification Time\tFile Name")
-parselog(args, args.merge, args.pathspec)
-
-# Missing files
-if filelist:
-    # Try to find them in merge logs, if not done already
-    # (usually HUGE, thus MUCH slower!)
-    if args.missing and not args.merge:
-        filterlist = list(filelist)
-        for i in range(0, len(filterlist), STEPMISSING):
-            parselog(args, merge=True, filterlist=filterlist[i:i+STEPMISSING])
-
-    # Still missing some?
-    for file in filelist:
-        log.warning("WARNING: not found in log: %s", file)
-
-# Final statistics
-# Suggestion: use git-log --before=mtime to brag about skipped log entries
-log.info(
-    "Statistics:\n"
-    "{:13,.2f} seconds\n"
-    "{:13,} log lines processed\n"
-    "{:13,} commits evaluated"
-    "".format(time.time()-start, stats['loglines'], stats['commits']))
-
-if args.dirs:
-    if stats['direrrors']: log.info("{:13,} directory update errors".format(stats['direrrors']))
-    log.info("{:13,} directories updated".format(stats['dirtouches']))
-
-if stats['touches'] != stats['totalfiles']: log.info("{:13,} files".format(stats['totalfiles']))
-if stats['files']:                          log.info("{:13,} files missing".format(stats['files']))
-if stats['errors']:                         log.info("{:13,} file update errors".format(stats['errors']))
-
-log.info("{:13,} files updated".format(stats['touches']))
-
-if args.test:
-    log.info("TEST RUN - No files modified!")
+main(args)
