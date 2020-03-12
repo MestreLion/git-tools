@@ -208,6 +208,7 @@ class Git():
         self.gitcmd = ['git']
         if workdir: self.gitcmd.extend(('--work-tree', workdir))
         if gitdir : self.gitcmd.extend(('--git-dir',   gitdir))
+        self.workdir, self.gitdir = self._repodirs()
 
     def ls_files(self, pathlist=None):
         return (normalize(_) for _ in self._run('ls-files --full-name', pathlist))
@@ -215,15 +216,15 @@ class Git():
     def is_dirty(self):
         return bool(self._run('diff --no-ext-diff --quiet', output=False))
 
-    def repodirs(self):
-        return (os.path.normpath(_) for _ in
-                self._run('rev-parse --show-toplevel --absolute-git-dir', check=True))
-
     def log(self, merge=False, first_parent=False, commit_time=False, pathlist=None):
         cmd = 'whatchanged --pretty={}'.format('%ct' if commit_time else '%at')
         if merge:        cmd += ' -m'
         if first_parent: cmd += ' --first-parent'
         return self._run(cmd, pathlist)
+
+    def _repodirs(self):
+        return (os.path.normpath(_) for _ in
+                self._run('rev-parse --show-toplevel --absolute-git-dir', check=True))
 
     def _run(self, cmdstr, pathlist=None, output=True, check=False):
         cmdlist = self.gitcmd + shlex.split(cmdstr)
@@ -270,7 +271,7 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
                              isodate(mtime), file)
                 filelist.remove(file)
                 try:
-                    touch(os.path.join(workdir, file), mtime, args.test)
+                    touch(os.path.join(git.workdir, file), mtime, args.test)
                     stats['touches'] += 1
                 except Exception as e:
                     log.error("ERROR: %s", e)
@@ -284,7 +285,7 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
                                  isodate(mtime), "{}/".format(dirname or '.'))
                     dirlist.remove(dirname)
                     try:
-                        touch(os.path.join(workdir, dirname), mtime, args.test)
+                        touch(os.path.join(git.workdir, dirname), mtime, args.test)
                         stats['dirtouches'] += 1
                     except Exception as e:
                         log.error("ERROR: %s", e)
@@ -303,18 +304,16 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
 
 # Main Logic ##################################################################
 
-def main(args):
+def main():
     start = time.time()  # yes, Wall time. CPU time is not realistic for users.
     stats = {_: 0 for _ in ('loglines', 'commits', 'touches', 'errors', 'dirtouches', 'direrrors')}
 
-    git = Git(args.workdir, args.gitdir)
-
     # First things first: Where and Who are we?
     try:
-        workdir, gitdir = git.repodirs()
-    except git.Error as e:
+        git = Git(args.workdir, args.gitdir)
+    except Git.Error as e:
         # Not in a git repository, and git already informed user on stderr. So we just...
-        sys.exit(e.returncode)
+        return e.returncode
 
     # Do not work on dirty repositories, unless --force
     if not args.force and git.is_dirty():
@@ -323,7 +322,7 @@ def main(args):
          "This could lead to undesirable results for modified files.\n"
          "Please, commit your changes (or use --force) and try again.\n"
          "Aborting")
-        sys.exit(1)
+        return 1
 
     # Get the files managed by git and build file and dir list to be processed
     filelist = set()
@@ -333,7 +332,7 @@ def main(args):
         dirlist  = set(os.path.dirname(_) for _ in filelist)
     else:
         for path in git.ls_files(args.pathspec):
-            fullpath = os.path.join(workdir, path)
+            fullpath = os.path.join(git.workdir, path)
 
             # Symlink (to file, to dir or broken - git handles the same way)
             if not UPDATE_SYMLINKS and os.path.islink(fullpath):
@@ -353,7 +352,7 @@ def main(args):
 
     if not filelist:
         # Nothing to do. Exit silently and without errors, just like git does
-        sys.exit(0)
+        return
 
     # Process the log until all files are 'touched'
     log.debug("Line #\tLog #\tF.Left\tModification Time\tFile Name")
@@ -400,4 +399,4 @@ log = setup_logging(args)
 log.trace("Arguments: %s", args)
 
 # UI done, it's show time!
-main(args)
+sys.exit(main())
