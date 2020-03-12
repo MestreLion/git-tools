@@ -30,8 +30,6 @@ on trees with uncommitted changes.
 """
 
 # TODO:
-# - Gracefully abort on KeyboardInterrupt (CTRL+C), with sys.exit(1). Require all code
-#   to be wrapped in main() function
 # - Add -z on git whatchanged/ls-files so we don't deal with filename decode/OS normalization
 # - When Python is bumped to 3.7, use text instead of universal_newlines on subprocess
 # - Update "Statistics for some large projects" with modern hardware and repositories.
@@ -40,9 +38,8 @@ on trees with uncommitted changes.
 
 # FIXME:
 # - When current dir is outside the worktree, e.g. using --work-tree, `git ls-files`
-#   assume any relative pathspecs are to worktree root, while filelist routine always
-#   assume relative to current directory. As is, absolute paths are required, it's
-#   impossible to match pathspecs using relative paths
+#   assume any relative pathspecs are to worktree root, not the current dir. As such,
+#   relative pathspecs may not work.
 # - Renames and mode changes should not change file mtime:
 #   - Must check on status 'R100' and mode changes with same blobs
 #   - Should require status to be (A, C, M, R<100, T). D will never be processed as
@@ -399,4 +396,8 @@ log = setup_logging(args)
 log.trace("Arguments: %s", args)
 
 # UI done, it's show time!
-sys.exit(main())
+try:
+    sys.exit(main())
+except KeyboardInterrupt:
+    log.info("Aborting")
+    sys.exit(-1)
