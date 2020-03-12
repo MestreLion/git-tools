@@ -39,11 +39,6 @@ on trees with uncommitted changes.
 #   - Move Statistics there
 
 # FIXME:
-# - Given lsfileslist, why do we still need filelist/os.walk routine? Should be changed to:
-#   - Process files on lsfileslist. It already discarded paths outside repo and '.git/'
-#   repo dir, and any missing files on disk makes repo dirty, already checked above.
-#   - dirlist should also be extracted from lsfileslist.
-#   - Discard symlinks on unsupported platforms
 # - When current dir is outside the worktree, e.g. using --work-tree, `git ls-files`
 #   assume any relative pathspecs are to worktree root, while filelist routine always
 #   assume relative to current directory. As is, absolute paths are required, it's
@@ -277,64 +272,28 @@ if not args.force and git.is_dirty():
      "Aborting")
     sys.exit(1)
 
-# Get the files managed by git
-lsfileslist = set(git.ls_files(args.pathspec))
-
-# List files matching user pathspec, relative to current directory
-# git commands always print paths relative to work tree root
+# Get the files managed by git and build file and dir list to be processed
 filelist = set()
 dirlist  = set()
-for path in (args.pathspec or (args.workdir or '.',)):
+if UPDATE_SYMLINKS and not args.skip_older_than:
+    filelist = set(git.ls_files(args.pathspec))
+    dirlist  = set(os.path.dirname(_) for _ in filelist)
+else:
+    for path in git.ls_files(args.pathspec):
+        fullpath = os.path.join(workdir, path)
 
-    # Normalize user input so ./doc = doc/ = doc/../doc/. = doc
-    path = os.path.normpath(path)
-
-    # Is path inside the work tree?
-    if os.path.commonprefix([workdir, os.path.abspath(path)]) != workdir:
-        log.warning("WARNING: Skipping pathspec outside work tree: %s", path)
-        continue
-
-    # git does not care if it's a broken symlink, hence lexists
-    if not os.path.lexists(path):
-        log.warning("WARNING: Skipping non-existing pathspec: %s", path)
-        continue
-
-    # file or symlink (to file, to dir or broken - git handles the same way)
-    islink = os.path.islink(path)
-    if os.path.isfile(path) or islink:
-        if islink and not UPDATE_SYMLINKS:
+        # Symlink (to file, to dir or broken - git handles the same way)
+        if not UPDATE_SYMLINKS and os.path.islink(fullpath):
             log.warning("WARNING: Skipping symlink, OS does not support update: %s", path)
             continue
+
+        # skip files which are older than given threshold
+        if args.skip_older_than and start - os.path.getmtime(fullpath) > args.skip_older_than:
+            continue
+
         # Always add them relative to worktree root
-        filelist.add(os.path.relpath(path, workdir))
-
-    # dir
-    else:
-        for root, subdirs, files in os.walk(path):
-            if gitdir in [os.path.abspath(os.path.join(root, subdir))
-                          for subdir in subdirs]:
-                subdirs.remove(os.path.basename(gitdir))
-
-            if os.path.abspath(root) == workdir and '.git' in files:
-                files.remove('.git')
-
-            if args.dirs:
-                dirname = os.path.relpath(root, workdir)
-                if dirname == '.':
-                    dirname = ''  # Like git does
-                dirlist.add(dirname)
-
-            for file in files:
-                file_path = os.path.join(root, file)
-
-                if args.skip_older_than and os.path.exists(file_path):
-                    # skip files which are older than given threshold
-                    if start - os.path.getmtime(file_path) > args.skip_older_than:
-                        continue
-                # Always add them relative to worktree root
-                filelist.add(os.path.relpath(file_path, workdir))
-
-filelist &= lsfileslist
+        filelist.add(path)
+        dirlist.add(os.path.dirname(path))
 
 totalfiles = files = len(filelist)
 log.info("{0:,} files to be processed in work dir".format(totalfiles))
