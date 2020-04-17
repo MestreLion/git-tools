@@ -22,14 +22,12 @@
 # Only works for conventional repositories where git dir is "<work-tree>/.git"
 
 myname="${0##*/}"
-mydir=$(dirname "$(readlink -f "$0")")
-verbose=0
 untracked=no
 
 invalid()  { printf "%s: invalid option: %s\n" "$myname" "$1" >&2 ; usage 1 ; }
 usage() {
 	cat <<-USAGE
-	Usage: $myname [DIR...]
+	Usage: $myname [-u] [DIR...]
 	USAGE
 	if [[ "$1" ]] ; then
 		cat >&2 <<- USAGE
@@ -43,8 +41,6 @@ usage() {
 
 	Options:
 	  -h|--help      - show this page.
-	  -v|--verbose   - print more details about what is being done.
-
 	  -u|--untracked - count untracked files as 'uncommitted'
 
 	  DIR...         - the directories to scan, or current directory if none
@@ -61,7 +57,6 @@ dirs=()
 for arg in "$@"; do [[ "$arg" == "-h" || "$arg" == "--help" ]] && usage ; done
 while (( $# )); do
 	case "$1" in
-	-v|--verbose  ) verbose=1                      ;;
 	-u|--untracked) untracked=normal               ;;
 	--            ) shift ; break                  ;;
 	-*            ) invalid "$1"                   ;;
@@ -74,5 +69,5 @@ dirs+=( "$@" )
 while read -r repo; do
 	repo="$(dirname "$repo")"
 	uncommitted=$(cd "$repo"; git status --short --untracked-files="$untracked")
-	[[ "$uncommitted" ]] && echo "$repo"
+	if [[ "$uncommitted" ]]; then echo "$repo"; fi
 done < <(find "${dirs[@]}" -name .git -type d)
