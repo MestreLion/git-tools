@@ -125,6 +125,15 @@ def parse_args():
         action='store_true', default=False, dest='commit_time',
         help="Use commit time instead of author time")
 
+    parser.add_argument('--oldest-time', '-o',
+        action='store_true', default=False, dest='reverse_order',
+        help="""Set the mtime to the time of the first commit to mention a given file
+        instead of the most recent. This works by reversing the order in which the git
+        log is processed (i.e. from oldest to most recent commit on the current branch,
+        instead of from most recent to oldest). This may result in incorrect behaviour
+        if there are multiple files which have been renamed with the same name in the
+        current branch's history.""")
+
     parser.add_argument('pathspec', nargs='*', metavar='PATH',
         help="""Only modify paths matching PATH, directories or files, relative to current
         directory. Default is to modify all files handled by git, ignoring untracked files
@@ -213,10 +222,12 @@ class Git():
     def is_dirty(self):
         return bool(self._run('diff --no-ext-diff --quiet', output=False))
 
-    def log(self, merge=False, first_parent=False, commit_time=False, pathlist=None):
+    def log(self, merge=False, first_parent=False, commit_time=False, reverse_order=False,
+            pathlist=None):
         cmd = 'whatchanged --pretty={}'.format('%ct' if commit_time else '%at')
-        if merge:        cmd += ' -m'
-        if first_parent: cmd += ' --first-parent'
+        if merge:         cmd += ' -m'
+        if first_parent:  cmd += ' --first-parent'
+        if reverse_order: cmd += ' --reverse'
         return self._run(cmd, pathlist)
 
     def _repodirs(self):
@@ -245,7 +256,8 @@ class Git():
 
 def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
     mtime = 0
-    for line in git.log(merge, args.first_parent, args.commit_time, filterlist):
+    for line in git.log(merge, args.first_parent, args.commit_time, args.reverse_order,
+            filterlist):
         stats['loglines'] += 1
 
         # Blank line between Date and list of files
