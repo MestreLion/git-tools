@@ -13,7 +13,7 @@ Requirements
 
 Bash and Python are already installed by default in virtually all GNU/Linux distros. And you probably already have Git if you are interested in these tools. But if somehow you don't, the command to install dependencies for Debian-like distros (like Ubuntu/Mint) is:
 
-	sudo apt-get bash python git
+	sudo apt-get bash python3 git
 
 Install
 -------
