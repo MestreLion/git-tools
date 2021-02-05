@@ -30,12 +30,28 @@ Gentoo Testing, also as root:
 
 	emerge dev-vcs/git-tools
 
-For manual installing to get most recent updates, just clone the repository and add the install directory to your `$PATH`
+To manually install and run from the repository, just clone the repository and add the install directory to your `$PATH`
 ```sh
 cd ~/some/dir
 git clone https://github.com/MestreLion/git-tools.git
 echo 'PATH=$PATH:~/some/dir/git-tools' >> ~/.profile  # or ~/.bashrc
 ```
+
+Usage
+-----
+
+If you installed using your operating system package manager, or if you added the cloned repository to your `$PATH`, you can simply run the tools as if they were regular `git` subcommands! For example:
+
+    git restore-mtime --test
+
+The magic? Git considers any executable named `git-*` in either `/usr/lib/git-core` or in `$PATH` to be a subcommand! It also integrates with `man`, triggering the manual pages if they're installed, such as when installing using your package manager:
+
+    git restore-mtime --help
+    git help strip-merge
+
+In case the manual pages are not installed in the system, such as when running from the cloned repository, you can still read the built-in help by directly invoking the tool:
+
+    git-clone-subset --help
 
 
 Uninstall
