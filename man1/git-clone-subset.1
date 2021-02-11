@@ -1,4 +1,4 @@
-.TH GIT-CLONE-SUBSET 1 2016-01-31
+.TH GIT-CLONE-SUBSET 1 2021-02-11
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -15,23 +15,21 @@ Clones a
 .I repository
 into a
 .I destination-dir
-and runs on the clone
+and prune from history all files except the ones matching
+.I pattern
+by running on the clone:
 .br
 .B git filter-branch --prune-empty --tree-filter 'git rm ...' -- --all
 .br
-to prune from history all files except the ones matching
-.IR pattern ,
-effectively creating a clone with a subset of files (and history) of the
-original repository.
+This effectively creates a clone with a subset of files (and history)
+of the original repository. The original repository is not modified.
 .sp
 Useful for creating a new repository out of a set of files from another
-repository, migrating (only) their associated history. Very similar to
-what
+repository, migrating (only) their associated history. Very similar to:
 .br
 .B git filter-branch --subdirectory-filter
 .br
-does, but for a file
-pattern instead of just a single directory.
+But git-clone-subset works on a path pattern instead of just a single directory.
 .SH OPTIONS
 .TP 8
 .BR \-h , \ \-\-help
@@ -44,7 +42,7 @@ URL or local path to the git repository to be cloned.
 Directory to create the clone. Same rules for git-clone applies: it
 will be created if it does not exist and it must be empty otherwise.
 But, unlike git-clone, this argument is not optional: git-clone uses
-several rules to determine the "Humane" dir name of a cloned repo,
+several rules to determine the "friendly" basename of a cloned repo,
 and git-clone-subset will not risk parse its output, let alone
 predict the chosen name.
 .TP 8

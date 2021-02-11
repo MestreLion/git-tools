@@ -32,16 +32,17 @@ usage() {
 	fi
 	cat <<-USAGE
 
-	Clones a <repository> into a <destination-dir> and runs on the clone
-	git filter-branch --prune-empty --tree-filter 'git rm ...' -- --all
-	to prune from history all files except the ones matching <pattern>,
-	effectively creating a clone with a subset of files (and history) of the
-	original repository.
+	Clones a <repository> into a <destination-dir> and prune from history
+	all files except the ones matching <pattern> by running on the clone:
+	    git filter-branch --prune-empty --tree-filter 'git rm ...' -- --all
+
+	This effectively creates a clone with a subset of files (and history)
+	of the original repository. The original repository is not modified.
 
 	Useful for creating a new repository out of a set of files from another
-	repository, migrating (only) their associated history. Very similar to
-	what git filter-branch --subdirectory-filter does, but for a file
-	pattern instead of just a single directory.
+	repository, migrating (only) their associated history. Very similar to:
+	   git filter-branch --subdirectory-filter
+	But $myname works on a path pattern instead of just a single directory.
 
 	Options:
 	  -h, --help
@@ -54,7 +55,7 @@ usage() {
 	    Directory to create the clone. Same rules for git-clone applies: it
 	    will be created if it does not exist and it must be empty otherwise.
 	    But, unlike git-clone, this argument is not optional: git-clone uses
-	    several rules to determine the "Humane" dir name of a cloned repo,
+	    several rules to determine the "friendly" basename of a cloned repo,
 	    and $myname will not risk parse its output, let alone
 	    predict the chosen name.
 
