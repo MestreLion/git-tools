@@ -132,6 +132,15 @@ git:
   depth: false
 ```
 
+Similarly, when using Github Actions, make sure to include `fetch-depth: 0` in your checkout workflow, as described in its [documentation](https://github.com/actions/checkout#Fetch-all-history-for-all-tags-and-branches):
+
+```yaml
+- uses: actions/checkout@v2
+  with:
+    fetch-depth: 0
+```
+
+
 git-strip-merge
 ---------------
 
