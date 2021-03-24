@@ -46,7 +46,7 @@ on trees with uncommitted changes.
 #     filelist is a subset of lsfileslist.
 # - Check file (A, D) for directory mtime is not sufficient:
 #   - Renames also change dir mtime, unless rename was on a parent dir
-#   - If most recent change of all files in a dir was a [M]odification,
+#   - If most recent change of all files in a dir was a Modification (M),
 #     dir might not be touched at all.
 #   - Dirs containing only subdirectories but no direct files will also
 #     not be touched. They're files' [grand]parent dir, but never their dirname().
@@ -64,10 +64,12 @@ on trees with uncommitted changes.
 if __name__ != "__main__":
     raise ImportError("{} should not be used as a module.".format(__name__))
 
-import subprocess, shlex
-import sys, os.path
-import logging
 import argparse
+import logging
+import os.path
+import shlex
+import subprocess
+import sys
 import time
 
 
@@ -157,16 +159,17 @@ def parse_args():
 
 # Helper functions ############################################################
 
-def setup_logging(args):
-    TRACE = logging.DEBUG // 2
+def setup_logging(args_):
+    logging.TRACE = TRACE = logging.DEBUG // 2
     logging.Logger.trace = lambda _, m, *a, **k: _.log(TRACE, m, *a, **k)
-    level = (args.verbose and max(TRACE, logging.DEBUG // args.verbose)) or args.loglevel
+    level = ((args_.verbose and max(TRACE, logging.DEBUG // args_.verbose))
+             or args_.loglevel)
     logging.basicConfig(level=level, format='%(message)s')
     return logging.getLogger()
 
 
 def normalize(path):
-    """Normalize paths from git, handling non-ASCII characters.
+    r"""Normalize paths from git, handling non-ASCII characters.
 
     Git for Windows, as of v1.7.10, stores paths as UTF-8 normalization form C. If path
     contains non-ASCII or non-printable chars it outputs the UTF-8 in octal-escaped
@@ -209,11 +212,11 @@ def isodate(secs):
 
 # Git class and parselog(), the heart of the script ###########################
 
-class Git():
+class Git:
     def __init__(self, workdir=None, gitdir=None):
         self.gitcmd = ['git']
         if workdir: self.gitcmd.extend(('--work-tree', workdir))
-        if gitdir : self.gitcmd.extend(('--git-dir',   gitdir))
+        if gitdir:  self.gitcmd.extend(('--git-dir',   gitdir))
         self.workdir, self.gitdir = self._repodirs()
 
     def ls_files(self, pathlist=None):
@@ -276,8 +279,8 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
             if file in filelist:
                 stats['files'] -= 1
                 log.debug("%d\t%d\t%d\t%s\t%s",
-                             stats['loglines'], stats['commits'], stats['files'],
-                             isodate(mtime), file)
+                          stats['loglines'], stats['commits'], stats['files'],
+                          isodate(mtime), file)
                 filelist.remove(file)
                 try:
                     touch(os.path.join(git.workdir, file), mtime, args.test)
@@ -290,8 +293,8 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
                 dirname = os.path.dirname(file)
                 if status[-1] in ('A', 'D') and dirname in dirlist:
                     log.debug("%d\t%d\t-\t%s\t%s",
-                                 stats['loglines'], stats['commits'],
-                                 isodate(mtime), "{}/".format(dirname or '.'))
+                              stats['loglines'], stats['commits'],
+                              isodate(mtime), "{}/".format(dirname or '.'))
                     dirlist.remove(dirname)
                     try:
                         touch(os.path.join(git.workdir, dirname), mtime, args.test)
