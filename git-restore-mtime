@@ -386,22 +386,28 @@ def main():
 
     # Final statistics
     # Suggestion: use git-log --before=mtime to brag about skipped log entries
-    log.info(
+    def loginfo(msg, *a, width=13):
+        ifmt = '{:%d,}'    % (width,)  # not using 'n' for consistency with ffmt
+        ffmt = '{:%d,.2f}' % (width,)
+        # %-formatting lacks thousand separator, must pre-render with .format()
+        log.info(msg.replace('%d', ifmt).replace('%f', ffmt).format(*a))
+
+    loginfo(
         "Statistics:\n"
-        "{:13,.2f} seconds\n"
-        "{:13,} log lines processed\n"
-        "{:13,} commits evaluated"
-        "".format(time.time()-start, stats['loglines'], stats['commits']))
+        "%f seconds\n"
+        "%d log lines processed\n"
+        "%d commits evaluated",
+        time.time()-start, stats['loglines'], stats['commits'])
 
     if args.dirs:
-        if stats['direrrors']: log.info("{:13,} directory update errors".format(stats['direrrors']))
-        log.info("{:13,} directories updated".format(stats['dirtouches']))
+        if stats['direrrors']: loginfo("%d directory update errors", stats['direrrors'])
+        loginfo("%d directories updated", stats['dirtouches'])
 
-    if stats['touches'] != stats['totalfiles']: log.info("{:13,} files".format(stats['totalfiles']))
-    if stats['files']:                          log.info("{:13,} files missing".format(stats['files']))
-    if stats['errors']:                         log.info("{:13,} file update errors".format(stats['errors']))
+    if stats['touches'] != stats['totalfiles']: loginfo("%d files", stats['totalfiles'])
+    if stats['files']:                          loginfo("%d files missing", stats['files'])
+    if stats['errors']:                         loginfo("%d file update errors", stats['errors'])
 
-    log.info("{:13,} files updated".format(stats['touches']))
+    loginfo("%d files updated", stats['touches'])
 
     if args.test:
         log.info("TEST RUN - No files modified!")
