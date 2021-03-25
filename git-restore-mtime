@@ -25,12 +25,12 @@ Useful prior to generating release tarballs, so each file is archived with a
 date that is similar to the date when the file was actually last modified,
 assuming the actual modification date and its commit date are close.
 
-By default ignores all ignored and untracked files, and also refuses to work
+Ignores by default all ignored and untracked files, and also refuses to work
 on trees with uncommitted changes.
 """
 
 # TODO:
-# - Add -z on git whatchanged/ls-files so we don't deal with filename decode/OS normalization
+# - Add -z on git whatchanged/ls-files, so we don't deal with filename decoding/OS normalization
 # - When Python is bumped to 3.7, use text instead of universal_newlines on subprocess
 # - Update "Statistics for some large projects" with modern hardware and repositories.
 # - Create a README.md for git-restore-mtime alone. It deserves extensive documentation
@@ -44,7 +44,7 @@ on trees with uncommitted changes.
 #   - Must check on status 'R100' and mode changes with same blobs
 #   - Should require status to be (A, C, M, R<100, T). D will never be processed as
 #     filelist is a subset of lsfileslist.
-# - Check file (A, D) for directory mtime is not sufficient:
+# - Check file (A, D) for the directory mtime is not sufficient:
 #   - Renames also change dir mtime, unless rename was on a parent dir
 #   - If most recent change of all files in a dir was a Modification (M),
 #     dir might not be touched at all.
@@ -53,7 +53,7 @@ on trees with uncommitted changes.
 #   - Some solutions:
 #     - After files done, perform some dir processing for missing dirs, finding latest
 #       file (A, D, R)
-#     - Simple approach: dir mtime is most recent child (dir or file) mtime
+#     - Simple approach: dir mtime is the most recent child (dir or file) mtime
 #     - Use a virtual concept of "created at most at" to fill missing info, bubble up
 #       to parents and grandparents
 #   - When handling [grand]parent dirs, stay inside <pathspec>
@@ -98,8 +98,8 @@ def parse_args():
     parser.add_argument('--merge', '-m', action="store_true",
         help="""Include merge commits. Leads to more recent mtimes and more files per
         commit, thus with the same mtime (which may or may not be what you want). Including
-        merge commits may lead to less commits being evaluated (all files are found sooner),
-        which improves performance, sometimes substantially. But since merge commits are
+        merge commits may lead to fewer commits being evaluated (all files are found sooner),
+        which improves performance, sometimes substantially. But, as merge commits are
         usually huge, processing them may also take longer, sometimes substantially.
         By default merge logs are only used for files missing from regular commit logs.""")
 
@@ -131,10 +131,10 @@ def parse_args():
         action='store_true', default=False, dest='reverse_order',
         help="""Set the mtime to the time of the first commit to mention a given file
         instead of the most recent. This works by reversing the order in which the git
-        log is processed (i.e. from oldest to most recent commit on the current branch,
-        instead of from most recent to oldest). This may result in incorrect behaviour
-        if there are multiple files which have been renamed with the same name in the
-        current branch's history.""")
+        log is processed (i.e. from the oldest to the most recent commit on the current
+        branch, instead of from most recent to oldest). This may result in incorrect
+        behaviour if there are multiple files which have been renamed with the same name
+        in the current branch's history.""")
 
     parser.add_argument('pathspec', nargs='*', metavar='PATH',
         help="""Only modify paths matching PATH, directories or files, relative to current
@@ -151,8 +151,7 @@ def parse_args():
         help="""Do not modify files that are older than %(metavar)s.
         It can significantly improve performance if fewer files are processed.
         Useful on CI builds, which can eventually switch workspace to different branch,
-        but mostly performs builds on the same one (e.g. master).
-        """)
+        but mostly performs builds on the same one (e.g. master).""")
 
     return parser.parse_args()
 
@@ -268,7 +267,7 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
 
         # File line
         if line[0] == ':':  # Faster than line.startswith(':')
-            # If line describes a rename, linetok has three tokens, otherwise two
+            # If line describes a renaming, linetok has three tokens, otherwise two
             linetok = line.split('\t')
             status = linetok[0]
             file = linetok[-1]
@@ -382,14 +381,14 @@ def main():
 
         # Still missing some?
         for file in filelist:
-            log.warning("WARNING: not found in log: %s", file)
+            log.warning("WARNING: not found in the log: %s", file)
 
     # Final statistics
     # Suggestion: use git-log --before=mtime to brag about skipped log entries
     def loginfo(msg, *a, width=13):
         ifmt = '{:%d,}'    % (width,)  # not using 'n' for consistency with ffmt
         ffmt = '{:%d,.2f}' % (width,)
-        # %-formatting lacks thousand separator, must pre-render with .format()
+        # %-formatting lacks a thousand separator, must pre-render with .format()
         log.info(msg.replace('%d', ifmt).replace('%f', ffmt).format(*a))
 
     loginfo(

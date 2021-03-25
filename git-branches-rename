@@ -73,13 +73,13 @@ while (( $# )); do
 	shift
 done
 
-[[ "$1" && "$2" ]] || missing
+[[ "$1" && "$2" ]] || missing 'a PREFIX'
 
 while read -r branch; do
-	if (($dry_run)) ; then
-		(($verbose)) && echo "$branch -> ${2}${branch#$1}"
+	if ((dry_run)) ; then
+		((verbose)) && echo "$branch -> ${2}${branch#$1}"
 	else
 		git branch -m "$branch" "${2}${branch#$1}" &&
-			(($verbose)) && echo "$branch -> ${2}${branch#$1}"
+			((verbose)) && echo "$branch -> ${2}${branch#$1}"
 	fi
 done < <(git branch | awk -v branches="${1/\\/\\\\}" '$NF ~ "^" branches {print $NF}')

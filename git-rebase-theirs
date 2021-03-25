@@ -102,6 +102,7 @@ for file in "${files[@]}"; do
 
 	if ((inplace)); then
 		outfile=$(mktemp) || skip "could not create temporary file"
+		# shellcheck disable=SC2064
 		trap "rm -f -- '$outfile'" EXIT
 		cp "$file" "$outfile" || skip
 		exec 3>"$outfile"

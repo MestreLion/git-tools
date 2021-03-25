@@ -18,7 +18,7 @@
 #    along with this program. See <http://www.gnu.org/licenses/gpl.html>
 #
 # Recursively finds all git repositories in each PATH argument, runs git status
-# on them, and prints the location of reposities with uncommitted changes
+# on them, and prints the location of repositories with uncommitted changes
 # Only works for conventional repositories where git dir is "<work-tree>/.git"
 
 myname="${0##*/}"
@@ -68,6 +68,6 @@ dirs+=( "$@" )
 
 while read -r repo; do
 	repo="$(dirname "$repo")"
-	uncommitted=$(cd "$repo"; git status --short --untracked-files="$untracked")
+	uncommitted=$(cd "$repo" && git status --short --untracked-files="$untracked")
 	if [[ "$uncommitted" ]]; then echo "$repo"; fi
 done < <(find "${dirs[@]}" -name .git -type d)
