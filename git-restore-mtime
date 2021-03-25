@@ -92,6 +92,14 @@ def parse_args():
     group.add_argument('--verbose', '-v', action="count",
         help="Print additional information for each processed file.")
 
+    parser.add_argument('--git-dir', dest='gitdir', metavar="GITDIR",
+        help="""Path to the git repository, by default auto-discovered by git by searching
+                the current directory and its parents for a .git/ subfolder.""")
+
+    parser.add_argument('--work-tree', dest='workdir', metavar="WORKTREE",
+        help="""Path to the work tree root, by default the parent of GITDIR if it was
+                automatically discovered, or the current directory if GITDIR was set.""")
+
     parser.add_argument('--force', '-f', action="store_true",
         help="Force execution on trees with uncommitted changes.")
 
@@ -136,22 +144,16 @@ def parse_args():
         behaviour if there are multiple files which have been renamed with the same name
         in the current branch's history.""")
 
-    parser.add_argument('pathspec', nargs='*', metavar='PATH',
-        help="""Only modify paths matching PATH, directories or files, relative to current
-        directory. Default is to modify all files handled by git, ignoring untracked files
-        and submodules.""")
-
-    parser.add_argument('--work-tree', dest='workdir',
-        help="Path to the work tree, if not current directory or one of its parents.")
-
-    parser.add_argument('--git-dir', dest='gitdir',
-        help="Path to the git repository, if not the default <work-tree-root>/.git")
-
     parser.add_argument('--skip-older-than', metavar='SECONDS', type=int,
         help="""Do not modify files that are older than %(metavar)s.
         It can significantly improve performance if fewer files are processed.
         Useful on CI builds, which can eventually switch workspace to different branch,
         but mostly performs builds on the same one (e.g. master).""")
+
+    parser.add_argument('pathspec', nargs='*', metavar='PATH',
+        help="""Only modify paths matching PATH, directories or files, relative to current
+        directory. Default is to modify all files handled by git, ignoring untracked files
+        and submodules.""")
 
     return parser.parse_args()
 
