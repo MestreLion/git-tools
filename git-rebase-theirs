@@ -24,10 +24,13 @@ inplace=0
 ext=".bak"
 
 message() { printf "%s\n" "$1" >&2 ; }
-skip()    { message "skipping ${2:-$file}${1:+: $1}"; continue ; }
 argerr()  { printf "%s: %s\n" "$myname" "${1:-error}" >&2 ; usage 1 ; }
 invalid() { argerr "invalid option: $1" ; }
 missing() { argerr "missing${1:+ $1} operand." ; }
+
+# Bash 4.4 does not allow 'continue' inside functions to operate on outer loops
+# See https://stackoverflow.com/a/52497694/624066
+skip()    { message "skipping ${2:-$file}${1:+: $1}"; }
 
 usage() {
 	cat <<- USAGE
@@ -98,13 +101,14 @@ ext=${suffix:-$ext}
 
 for file in "${files[@]}"; do
 
-	if ! [[ -f "$file" ]]; then skip "not a valid file"; fi
+	if ! [[ -f "$file" ]]; then skip "not a valid file"; continue; fi
 
 	if ((inplace)); then
-		outfile=$(mktemp) || skip "could not create temporary file"
+		outfile=$(mktemp) ||
+			{ skip "could not create temporary file"; continue; }
 		# shellcheck disable=SC2064
 		trap "rm -f -- '$outfile'" EXIT
-		cp "$file" "$outfile" || skip
+		cp "$file" "$outfile" || { skip; continue; }
 		exec 3>"$outfile"
 	else
 		exec 3>&1
@@ -117,11 +121,14 @@ for file in "${files[@]}"; do
 
 	if ! ((inplace)); then continue; fi
 
-	diff "$file" "$outfile" >/dev/null && skip "no conflict markers found"
+	diff "$file" "$outfile" >/dev/null &&
+		{ skip "no conflict markers found"; continue; }
 
-	if ((backup)); then cp "$file" "$file$ext" || skip "could not backup"; fi
+	if ((backup)); then
+		cp "$file" "$file$ext" || { skip "could not backup"; continue; }
+	fi
 
-	cp "$outfile" "$file" || skip "could not edit in-place"
+	cp "$outfile" "$file" || { skip "could not edit in-place"; continue; }
 	rm -f -- "$outfile"
 	trap - EXIT
 
