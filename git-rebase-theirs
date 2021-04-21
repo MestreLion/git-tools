@@ -46,17 +46,18 @@ usage() {
 
 	Resolve git rebase conflicts in FILE(s) by favoring 'theirs' version
 
-	When using git rebase, conflicts are usually wanted to be resolved
-	by favoring the <working branch> version (the branch being rebased,
-	'theirs' side in a rebase), instead of the <upstream> version (the
-	base branch, 'ours' side)
+	When using git rebase, one may want to automatically resolve conflicts
+	by favoring the <working branch> version, which is the branch being
+	rebased, 'theirs' side in a rebase, instead of the <upstream> version,
+	the base branch, 'ours' side in the rebase.
 
-	But git rebase --strategy -X theirs is only available from git 1.7.3
-	For older versions, $myname is the solution. And Despite the name,
-	it's also useful for fixing failed cherry-picks
+	The solution is 'git rebase --strategy recursive -X theirs', which is
+	only available since git 1.7.3. For older versions, $myname
+	solves that problem. And despite its name it's also useful for fixing
+	failed cherry-picks.
 
-	It works by discarding all lines between '<<<<<<< ' and '========'
-	inclusive, and also the the '>>>>>> commit' marker.
+	It works by discarding all lines between '<<<<<<< ' and '========',
+	inclusive, and also the '>>>>>> commit' marker.
 
 	By default it outputs to stdout, but files can be edited in-place
 	using --in-place, which, unlike sed, creates a backup by default.
