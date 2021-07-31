@@ -30,7 +30,8 @@ on trees with uncommitted changes.
 """
 
 # TODO:
-# - Add -z on git whatchanged/ls-files, so we don't deal with filename decoding/OS normalization
+# - Add -z on git whatchanged/ls-files, so we don't deal with filename decoding
+#   or OS normalization. See issue #9 for a working proof-of-concept by @wafer-li
 # - When Python is bumped to 3.7, use text instead of universal_newlines on subprocess
 # - Update "Statistics for some large projects" with modern hardware and repositories.
 # - Create a README.md for git-restore-mtime alone. It deserves extensive documentation
@@ -193,7 +194,7 @@ def normalize(path):
         # Python 2: path = path[1:-1].decode("string-escape")
         # Python 3: https://stackoverflow.com/a/46650050/624066
         path = (path[1:-1]                 # Remove enclosing double quotes
-                .encode('latin1')          # Convert to bytes, required 'unicode-escape'
+                .encode('latin1')          # Convert to bytes, required by 'unicode-escape'
                 .decode('unicode-escape')  # Perform the actual octal-escaping decode
                 .encode('latin1')          # 1:1 mapping to bytes, forming UTF-8 encoding
                 .decode('utf8'))           # Decode from UTF-8
