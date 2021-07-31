@@ -73,9 +73,14 @@ import sys
 import time
 
 
-# Update symlinks only if the OS supports not following them
+# Update symlinks only if the platform supports not following them
 UPDATE_SYMLINKS = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
+
+# How many files to process in each batch when re-trying merge commits
 STEPMISSING = 100
+
+# (Extra) keywords for the os.utime() call performed by touch()
+UTIME_KWS = {} if not UPDATE_SYMLINKS else {'follow_symlinks': False}
 
 
 # Command-line interface ######################################################
@@ -161,6 +166,7 @@ def parse_args():
 # Helper functions ############################################################
 
 def setup_logging(args_):
+    """Logging basic config, also adding TRACE level and its corresponding method"""
     logging.TRACE = TRACE = logging.DEBUG // 2
     logging.Logger.trace = lambda _, m, *a, **k: _.log(TRACE, m, *a, **k)
     level = ((args_.verbose and max(TRACE, logging.DEBUG // args_.verbose))
@@ -195,16 +201,13 @@ def normalize(path):
     return os.path.normpath(path)
 
 
-if UPDATE_SYMLINKS:
-    def touch(path, mtime, test=False):
-        """The actual mtime update"""
-        if test: return
-        os.utime(path, (mtime, mtime), follow_symlinks=False)
-else:
-    def touch(path, mtime, test=False):
-        """The actual mtime update"""
-        if test: return
-        os.utime(path, (mtime, mtime))
+def dummy(*_args, **_kwargs):
+    """No-op function used in dry-run tests"""
+
+
+def touch(path, mtime):
+    """The actual mtime update"""
+    os.utime(path, (mtime, mtime), **UTIME_KWS)
 
 
 def isodate(secs):
@@ -260,12 +263,18 @@ class Git:
 
 def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
     mtime = 0
-    for line in git.log(merge, args.first_parent, args.commit_time, args.reverse_order,
-            filterlist):
+    for line in git.log(
+            merge,
+            args.first_parent,
+            args.commit_time,
+            args.reverse_order,
+            filterlist
+    ):
         stats['loglines'] += 1
 
         # Blank line between Date and list of files
-        if not line: continue
+        if not line:
+            continue
 
         # File line
         if line[0] == ':':  # Faster than line.startswith(':')
@@ -320,6 +329,8 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
 def main():
     start = time.time()  # yes, Wall time. CPU time is not realistic for users.
     stats = {_: 0 for _ in ('loglines', 'commits', 'touches', 'errors', 'dirtouches', 'direrrors')}
+
+    log.trace("Arguments: %s", args)
 
     # First things first: Where and Who are we?
     try:
@@ -414,9 +425,11 @@ def main():
         log.info("TEST RUN - No files modified!")
 
 
+# Keep only essential, global assignments here. Any other logic must be in main()
 args = parse_args()
 log = setup_logging(args)
-log.trace("Arguments: %s", args)
+if args.test:
+    touch = dummy
 
 # UI done, it's show time!
 try:
