@@ -308,7 +308,7 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
                           isodate(mtime), file)
                 filelist.remove(file)
                 try:
-                    touch(os.path.join(git.workdir, file), mtime, args.test)
+                    touch(os.path.join(git.workdir, file), mtime)
                     stats['touches'] += 1
                 except Exception as e:
                     log.error("ERROR: %s", e)
@@ -322,7 +322,7 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
                               isodate(mtime), "{}/".format(dirname or '.'))
                     dirlist.remove(dirname)
                     try:
-                        touch(os.path.join(git.workdir, dirname), mtime, args.test)
+                        touch(os.path.join(git.workdir, dirname), mtime)
                         stats['dirtouches'] += 1
                     except Exception as e:
                         log.error("ERROR: %s", e)
