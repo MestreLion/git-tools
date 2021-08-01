@@ -223,6 +223,7 @@ class Git:
         if workdir: self.gitcmd.extend(('--work-tree', workdir))
         if gitdir:  self.gitcmd.extend(('--git-dir',   gitdir))
         self.workdir, self.gitdir = self._repodirs()
+        self._proc = None
 
     def ls_files(self, pathlist=None):
         return (normalize(_) for _ in self._run('ls-files --full-name', pathlist))
@@ -237,6 +238,16 @@ class Git:
         if first_parent:  cmd += ' --first-parent'
         if reverse_order: cmd += ' --reverse'
         return self._run(cmd, pathlist)
+
+    def terminate(self):
+        if self._proc is None:
+            return
+        try:
+            self._proc.terminate()
+        except OSError:
+            # Avoid errors on OpenBSD
+            pass
+
 
     def _repodirs(self):
         return (os.path.normpath(_) for _ in
@@ -256,8 +267,11 @@ class Git:
                 return stdout.splitlines()
             except subprocess.CalledProcessError as e:
                 raise self.Error(e.returncode, e.cmd, e.output, e.stderr)
-        self.proc = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, universal_newlines=True)
-        return (_.strip() for _ in self.proc.stdout)
+        self._proc = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, universal_newlines=True)
+        try:
+            return (_.strip() for _ in self._proc.stdout)
+        finally:
+            self._proc = None
 
     class Error(subprocess.CalledProcessError): pass
 
@@ -321,7 +335,7 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
 
         # All files done?
         if not stats['files']:
-            git.proc.terminate()  # hackish, but does the job. Not needed anyway
+            git.terminate()
             return
 
 
