@@ -30,6 +30,7 @@ recent commit that modified them
 .RB [ --oldest-time ]
 .br
 .RB [ --skip-older-than ]
+.RB [ --unique-times ]
 .br
 .RI [ pathspec
 .RI [ pathspec ...]]
@@ -120,6 +121,11 @@ It can significantly improve performance if fewer files
 are processed. Useful on CI builds, which can eventually
 switch workspace to different branch, but mostly performs
 builds on the same one (e.g. master).
+.TP 8
+.BR \-\-unique-times
+Set the nanoseconds to a unique value per commit.
+It allows telling apart changes that would otherwise have
+identical timestamps, as git has time accuracy in seconds.
 .SH SEE ALSO
 .B https://github.com/MestreLion/git-tools
 .SH AUTHOR

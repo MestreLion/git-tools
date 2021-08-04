@@ -156,6 +156,11 @@ def parse_args():
         Useful on CI builds, which can eventually switch workspace to different branch,
         but mostly performs builds on the same one (e.g. master).""")
 
+    parser.add_argument('--unique-times',
+        help="""Set the nanoseconds to a unique value per commit.
+        It allows telling apart changes that would otherwise have identical
+        timestamps, as git's time accuracy is in seconds.""")
+
     parser.add_argument('pathspec', nargs='*', metavar='PATH',
         help="""Only modify paths matching PATH, directories or files, relative to current
         directory. Default is to modify all files handled by git, ignoring untracked files
@@ -206,9 +211,18 @@ def dummy(*_args, **_kwargs):
     """No-op function used in dry-run tests"""
 
 
-def touch(path, mtime):
+def touch(path, mtime, _idx=0):
     """The actual mtime update"""
     os.utime(path, (mtime, mtime), **UTIME_KWS)
+
+
+def touch_unique(path, mtime, idx=0):
+    """The actual mtime update, using nanosseconds for unique timestamps"""
+    # NTFS has a 100ns resolution, hence idx * 100
+    # No, I will NOT use (idx % 10**7) in THE most time-sensitive function
+    # in this script just in the name of correctness.
+    ns = mtime * 10**9 + idx * 100
+    os.utime(path, None, ns=(ns, ns), **UTIME_KWS)
 
 
 def isodate(secs):
@@ -248,7 +262,6 @@ class Git:
             # Avoid errors on OpenBSD
             pass
 
-
     def _repodirs(self):
         return (os.path.normpath(_) for _ in
                 self._run('rev-parse --show-toplevel --absolute-git-dir', check=True))
@@ -277,6 +290,7 @@ class Git:
 
 
 def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
+    idx = 0
     mtime = 0
     for line in git.log(
             merge,
@@ -295,7 +309,7 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
         if line[0] == ':':  # Faster than line.startswith(':')
             # If line describes a renaming, linetok has three tokens, otherwise two
             linetok = line.split('\t')
-            status = linetok[0]
+            status = linetok[0][-1]  # actually linetok[0].split(' ')[-1]
             file = linetok[-1]
 
             # Handles non-ASCII chars and OS path separator
@@ -308,7 +322,7 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
                           isodate(mtime), file)
                 filelist.remove(file)
                 try:
-                    touch(os.path.join(git.workdir, file), mtime)
+                    touch(os.path.join(git.workdir, file), mtime, idx)
                     stats['touches'] += 1
                 except Exception as e:
                     log.error("ERROR: %s", e)
@@ -316,13 +330,13 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
 
             if args.dirs:
                 dirname = os.path.dirname(file)
-                if status[-1] in ('A', 'D') and dirname in dirlist:
+                if status in ('A', 'D') and dirname in dirlist:
                     log.debug("%d\t%d\t-\t%s\t%s",
                               stats['loglines'], stats['commits'],
                               isodate(mtime), "{}/".format(dirname or '.'))
                     dirlist.remove(dirname)
                     try:
-                        touch(os.path.join(git.workdir, dirname), mtime)
+                        touch(os.path.join(git.workdir, dirname), mtime, idx)
                         stats['dirtouches'] += 1
                     except Exception as e:
                         log.error("ERROR: %s", e)
@@ -331,6 +345,7 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
         # Date line
         else:
             stats['commits'] += 1
+            idx = stats['commits']
             mtime = int(line)
 
         # All files done?
@@ -443,8 +458,11 @@ def main():
 # Keep only essential, global assignments here. Any other logic must be in main()
 args = parse_args()
 log = setup_logging(args)
+# Set the actual touch() function based on command-line arguments
 if args.test:
     touch = dummy
+elif args.unique_times:
+    touch = touch_unique
 
 # UI done, it's show time!
 try:
