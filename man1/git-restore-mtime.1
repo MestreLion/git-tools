@@ -1,4 +1,4 @@
-.TH GIT-RESTORE-MTIME 1 2016-01-31
+.TH GIT-RESTORE-MTIME 1 2021-09-04
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -13,20 +13,21 @@ recent commit that modified them
 .RB [ -h ]
 .RB [ --quiet ]
 .RB [ --verbose ]
-.RB [ --force ]
-.RB [ --merge ]
-.RB [ --first-parent ]
 .br
-.RB [ --skip-missing ]
-.RB [ --no-directories ]
-.RB [ --test ]
-.RB [ --commit-time ]
-.br
-.RB [ --oldest-commit ]
 .RB [ --work-tree
 .IR WORKDIR ]
 .RB [ --git-dir
 .IR GITDIR ]
+.br
+.RB [ --force ]
+.RB [ --merge ]
+.RB [ --first-parent ]
+.RB [ --skip-missing ]
+.br
+.RB [ --no-directories ]
+.RB [ --test ]
+.RB [ --commit-time ]
+.RB [ --oldest-time ]
 .br
 .RI [ pathspec
 .RI [ pathspec ...]]
@@ -51,6 +52,14 @@ suppress informative messages and summary statistics.
 .BR \-\-verbose , \-v
 print additional information for each processed file.
 Overwrites --quiet.
+.TP 8
+.BI \-\-work-tree\  WORKDIR
+specify where the work tree is. Default for most
+repositories is the current directory.
+.TP 8
+.BI \-\-git-dir\  GITDIR
+specify where the git repository is. Default for most
+repositories is <work-tree>/.git
 .TP 8
 .BR \-\-force , \-f
 force execution on trees with uncommitted changes.
@@ -87,7 +96,13 @@ do not update directory mtime for files created,
 renamed or deleted in it. Note: just modifying a file
 will not update its directory mtime.
 .TP 8
-.BR \-\-oldest-commit , \-o
+.BR \-\-test , \-t
+test run: do not actually update any file
+.TP 8
+.BR \-\-commit-time , \-c
+use commit time instead of author time
+.TP 8
+.BR \-\-oldest-time , \-o
 pass --reverse to git whatchanged, so that the commit
 history for the current branch will be processed in
 reverse order (i.e. from the oldest commit to the most
@@ -96,20 +111,6 @@ to the time of the oldest commit to reference that
 file, instead of most recent. This option will not
 work correctly on branches where multiple files have
 been renamed with the same name.
-.TP 8
-.BR \-\-test , \-t
-test run: do not actually update any file
-.TP 8
-.BR \-\-commit-time , \-c
-use commit time instead of author time
-.TP 8
-.BI \-\-work-tree\  WORKDIR
-specify where the work tree is. Default for most
-repositories is current directory.
-.TP 8
-.BI \-\-git-dir\  GITDIR
-specify where the git repository is. Default for most
-repositories <work-tree>/.git
 .SH SEE ALSO
 .B https://github.com/MestreLion/git-tools
 .SH AUTHOR
