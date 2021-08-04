@@ -325,47 +325,47 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
         if not line:
             continue
 
-        # File line
-        if line[0] == ':':  # Faster than line.startswith(':')
-            # If line describes a renaming, linetok has three tokens, otherwise two
-            linetok = line.split('\t')
-            status = linetok[0][-1]  # actually linetok[0].split(' ')[-1]
-            file = linetok[-1]
-
-            # Handles non-ASCII chars and OS path separator
-            file = normalize(file)
-
-            if file in filelist:
-                stats['files'] -= 1
-                log.debug("%d\t%d\t%d\t%s\t%s",
-                          stats['loglines'], stats['commits'], stats['files'],
-                          strdate, file)
-                filelist.remove(file)
-                try:
-                    touch(os.path.join(git.workdir, file), mtime)
-                    stats['touches'] += 1
-                except Exception as e:
-                    log.error("ERROR: %s", e)
-                    stats['errors'] += 1
-
-            if args.dirs:
-                dirname = os.path.dirname(file)
-                if status in ('A', 'D') and dirname in dirlist:
-                    log.debug("%d\t%d\t-\t%s\t%s",
-                              stats['loglines'], stats['commits'],
-                              strdate, "{}/".format(dirname or '.'))
-                    dirlist.remove(dirname)
-                    try:
-                        touch(os.path.join(git.workdir, dirname), mtime)
-                        stats['dirtouches'] += 1
-                    except Exception as e:
-                        log.error("ERROR: %s", e)
-                        stats['direrrors'] += 1
-
         # Date line
-        else:
+        if not line[0] == ':':  # Faster than line.startswith(':')
             stats['commits'] += 1
             mtime, strdate = get_times(line, stats['commits'])
+            continue
+
+        # File line
+        # If line describes a renaming, linetok has three tokens, otherwise two
+        linetok = line.split('\t')
+        status = linetok[0][-1]  # actually linetok[0].split(' ')[-1]
+        file = linetok[-1]
+
+        # Handles non-ASCII chars and OS path separator
+        file = normalize(file)
+
+        if file in filelist:
+            stats['files'] -= 1
+            log.debug("%d\t%d\t%d\t%s\t%s",
+                      stats['loglines'], stats['commits'], stats['files'],
+                      strdate, file)
+            filelist.remove(file)
+            try:
+                touch(os.path.join(git.workdir, file), mtime)
+                stats['touches'] += 1
+            except Exception as e:
+                log.error("ERROR: %s", e)
+                stats['errors'] += 1
+
+        if args.dirs:
+            dirname = os.path.dirname(file)
+            if status in ('A', 'D') and dirname in dirlist:
+                log.debug("%d\t%d\t-\t%s\t%s",
+                          stats['loglines'], stats['commits'],
+                          strdate, "{}/".format(dirname or '.'))
+                dirlist.remove(dirname)
+                try:
+                    touch(os.path.join(git.workdir, dirname), mtime)
+                    stats['dirtouches'] += 1
+                except Exception as e:
+                    log.error("ERROR: %s", e)
+                    stats['direrrors'] += 1
 
         # All files done?
         if not stats['files']:
