@@ -66,6 +66,7 @@ if __name__ != "__main__":
     raise ImportError("{} should not be used as a module.".format(__name__))
 
 import argparse
+import datetime
 import logging
 import os.path
 import shlex
@@ -157,7 +158,7 @@ def parse_args():
         but mostly performs builds on the same one (e.g. master).""")
 
     parser.add_argument('--unique-times',
-        help="""Set the nanoseconds to a unique value per commit.
+        help="""Set the microseconds to a unique value per commit.
         It allows telling apart changes that would otherwise have identical
         timestamps, as git's time accuracy is in seconds.""")
 
@@ -211,22 +212,41 @@ def dummy(*_args, **_kwargs):
     """No-op function used in dry-run tests"""
 
 
-def touch(path, mtime, _idx=0):
+def touch(path, mtime):
     """The actual mtime update"""
     os.utime(path, (mtime, mtime), **UTIME_KWS)
 
 
-def touch_unique(path, mtime, idx=0):
+def touch_unique(path, mtime_ns):
     """The actual mtime update, using nanosseconds for unique timestamps"""
-    # NTFS has a 100ns resolution, hence idx * 100
-    # No, I will NOT use (idx % 10**7) in THE most time-sensitive function
-    # in this script just in the name of correctness.
-    ns = mtime * 10**9 + idx * 100
-    os.utime(path, None, ns=(ns, ns), **UTIME_KWS)
+    os.utime(path, None, ns=(mtime_ns, mtime_ns), **UTIME_KWS)
 
 
-def isodate(secs):
+def isodate(secs:int):
+    # time.localtime() accepts floats, but discards fractional part
     return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(secs))
+
+
+def isodate_frac(secs:float):
+    # ~16% slower than isodate() for integers, but otherwise equivalent
+    return datetime.datetime.fromtimestamp(secs).isoformat(sep=' ')
+
+
+def get_times(secs:str, _idx=0):
+    mtime = int(secs)
+    return mtime, isodate(mtime)
+
+
+def get_times_ns(secs:str, idx:int):
+    # Time resolution for filesystems and functions:
+    # ext-4 and other POSIX filesystems: 1 nanosecond
+    # NTFS (Windows default): 100 nanoseconds
+    # datetime.datetime() (due to 64-bit float epoch): 1 microsecond
+    s = int(secs)
+    us = idx % 10**6
+    mtime = s + us / 10**6
+    mtime_ns = s * 10**9 + us * 1000
+    return mtime_ns, isodate_frac(mtime)
 
 
 # Git class and parselog(), the heart of the script ###########################
@@ -290,8 +310,8 @@ class Git:
 
 
 def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
-    idx = 0
     mtime = 0
+    strdate = isodate(0)
     for line in git.log(
             merge,
             args.first_parent,
@@ -319,10 +339,10 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
                 stats['files'] -= 1
                 log.debug("%d\t%d\t%d\t%s\t%s",
                           stats['loglines'], stats['commits'], stats['files'],
-                          isodate(mtime), file)
+                          strdate, file)
                 filelist.remove(file)
                 try:
-                    touch(os.path.join(git.workdir, file), mtime, idx)
+                    touch(os.path.join(git.workdir, file), mtime)
                     stats['touches'] += 1
                 except Exception as e:
                     log.error("ERROR: %s", e)
@@ -333,10 +353,10 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
                 if status in ('A', 'D') and dirname in dirlist:
                     log.debug("%d\t%d\t-\t%s\t%s",
                               stats['loglines'], stats['commits'],
-                              isodate(mtime), "{}/".format(dirname or '.'))
+                              strdate, "{}/".format(dirname or '.'))
                     dirlist.remove(dirname)
                     try:
-                        touch(os.path.join(git.workdir, dirname), mtime, idx)
+                        touch(os.path.join(git.workdir, dirname), mtime)
                         stats['dirtouches'] += 1
                     except Exception as e:
                         log.error("ERROR: %s", e)
@@ -345,8 +365,7 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
         # Date line
         else:
             stats['commits'] += 1
-            idx = stats['commits']
-            mtime = int(line)
+            mtime, strdate = get_times(line, stats['commits'])
 
         # All files done?
         if not stats['files']:
@@ -463,6 +482,7 @@ if args.test:
     touch = dummy
 elif args.unique_times:
     touch = touch_unique
+    get_times = get_times_ns
 
 # UI done, it's show time!
 try:
