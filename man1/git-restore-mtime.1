@@ -29,6 +29,8 @@ recent commit that modified them
 .RB [ --commit-time ]
 .RB [ --oldest-time ]
 .br
+.RB [ --skip-older-than ]
+.br
 .RI [ pathspec
 .RI [ pathspec ...]]
 .SH DESCRIPTION
@@ -111,6 +113,13 @@ to the time of the oldest commit to reference that
 file, instead of most recent. This option will not
 work correctly on branches where multiple files have
 been renamed with the same name.
+.TP 8
+.BR \-\-skip-older-than SECONDS
+Do not modify files that are older than SECONDS.
+It can significantly improve performance if fewer files
+are processed. Useful on CI builds, which can eventually
+switch workspace to different branch, but mostly performs
+builds on the same one (e.g. master).
 .SH SEE ALSO
 .B https://github.com/MestreLion/git-tools
 .SH AUTHOR
