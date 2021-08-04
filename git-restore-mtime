@@ -157,7 +157,7 @@ def parse_args():
         Useful on CI builds, which can eventually switch workspace to different branch,
         but mostly performs builds on the same one (e.g. master).""")
 
-    parser.add_argument('--unique-times',
+    parser.add_argument('--unique-times', action="store_true", default=False,
         help="""Set the microseconds to a unique value per commit.
         It allows telling apart changes that would otherwise have identical
         timestamps, as git's time accuracy is in seconds.""")
