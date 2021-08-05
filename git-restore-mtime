@@ -478,12 +478,12 @@ def main():
 # Keep only essential, global assignments here. Any other logic must be in main()
 args = parse_args()
 log = setup_logging(args)
-# Set the actual touch() function based on command-line arguments
-if args.test:
-    touch = dummy
-elif args.unique_times:
+# Set the actual touch() and other functions based on command-line arguments
+if args.unique_times:
     touch = touch_unique
     get_times = get_times_ns
+if args.test:
+    touch = dummy
 
 # UI done, it's show time!
 try:
