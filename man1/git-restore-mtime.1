@@ -56,13 +56,15 @@ suppress informative messages and summary statistics.
 print additional information for each processed file.
 Overwrites --quiet.
 .TP 8
-.BI \-\-work-tree\  WORKDIR
-specify where the work tree is. Default for most
-repositories is the current directory.
-.TP 8
 .BI \-\-git-dir\  GITDIR
-specify where the git repository is. Default for most
-repositories is <work-tree>/.git
+path to the git repository, by default auto-discovered
+by git by searching the current directory and its parents
+for a .git/ subfolder
+.TP 8
+.BI \-\-work-tree\  WORKDIR
+path to the work tree root, by default the parent of GITDIR
+if it was automatically discovered, or the current directory
+if GITDIR was set.
 .TP 8
 .BR \-\-force , \-f
 force execution on trees with uncommitted changes.
