@@ -41,10 +41,11 @@ on trees with uncommitted changes.
 # - When current dir is outside the worktree, e.g. using --work-tree, `git ls-files`
 #   assume any relative pathspecs are to worktree root, not the current dir. As such,
 #   relative pathspecs may not work.
-# - Renames and mode changes should not change file mtime:
-#   - Must check on status 'R100' and mode changes with same blobs
-#   - Should require status to be (A, C, M, R<100, T). D will never be processed as
-#     filelist is a subset of lsfileslist.
+# - Renames are tricky:
+#   - R100 should not change mtime, but original name is not on filelist. Should
+#     track renames until a valid (A, M) mtime found and then set on current name.
+#   - Should set mtime for both current and original directories.
+#   - Check mode changes with unchanged blobs?
 # - Check file (A, D) for the directory mtime is not sufficient:
 #   - Renames also change dir mtime, unless rename was on a parent dir
 #   - If most recent change of all files in a dir was a Modification (M),
@@ -217,7 +218,7 @@ def touch(path, mtime):
     os.utime(path, (mtime, mtime), **UTIME_KWS)
 
 
-def touch_unique(path, mtime_ns):
+def touch_ns(path, mtime_ns):
     """The actual mtime update, using nanosseconds for unique timestamps"""
     os.utime(path, None, ns=(mtime_ns, mtime_ns), **UTIME_KWS)
 
@@ -334,7 +335,15 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
         # File line
         # If line describes a renaming, linetok has three tokens, otherwise two
         linetok = line.split('\t')
-        status = linetok[0][-1]  # actually linetok[0].split(' ')[-1]
+
+        # Possible statuses:
+        # M: Modified (content changed)
+        # A: Added (created)
+        # D: Deleted
+        # T: Type changed: to/from regular file, symlinks, submodules
+        # R099: Renamed (moved), with % of unchanged content. 100 = pure rename
+        # Not possible in log: C=Copied, U=Unmerged, X=Unknown, B=pairing Broken
+        status = linetok[0].split(' ')[-1]
         file = linetok[-1]
 
         # Handles non-ASCII chars and OS path separator
@@ -480,8 +489,9 @@ args = parse_args()
 log = setup_logging(args)
 # Set the actual touch() and other functions based on command-line arguments
 if args.unique_times:
-    touch = touch_unique
+    touch = touch_ns
     get_times = get_times_ns
+# Make sure this is always set last to ensure --test behaves as intended
 if args.test:
     touch = dummy
 
