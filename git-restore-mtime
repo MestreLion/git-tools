@@ -436,6 +436,7 @@ def main():
         # Try to find them in merge logs, if not done already
         # (usually HUGE, thus MUCH slower!)
         if args.missing and not args.merge:
+            log.info("{0:,} files not found in log, trying merge commits".format(len(filelist)))
             filterlist = list(filelist)
             for i in range(0, len(filterlist), STEPMISSING):
                 parselog(filelist, dirlist, stats, git,
