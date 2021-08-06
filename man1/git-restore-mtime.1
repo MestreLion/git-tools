@@ -128,6 +128,17 @@ builds on the same one (e.g. master).
 Set the microseconds to a unique value per commit.
 It allows telling apart changes that would otherwise have
 identical timestamps, as git has time accuracy in seconds.
+.SH KNOWN ISSUES
+Renames are poorly handled: it always changes the timestamps
+of files, even if no content was modified.
+.br
+Directory timestamps are also limited to being modified
+only when files are added (created) or deleted in them.
+.br
+In very large repositories, after running \fBrestore-mtime\fR to modify
+the timestamp of several files, further git operations may emit the error
+.B fatal: mmap failed: Cannot allocate memory.
+This is harmless, and can be fixed by running \fBgit-status\fR(1).
 .SH SEE ALSO
 .B https://github.com/MestreLion/git-tools
 .SH AUTHOR
