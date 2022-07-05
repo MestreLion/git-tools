@@ -21,7 +21,7 @@ Install
 -------
 
 For [Debian](https://tracker.debian.org/pkg/git-mestrelion-tools), [Ubuntu](https://launchpad.net/ubuntu/+source/git-mestrelion-tools),
-LinuxMint, Kali Linux, and their derivatives, most tools are in the repositories as `git-restore-mtime`:
+LinuxMint, Kali and their derivatives, in official repositories as `git-restore-mtime`:
 
 	sudo apt install git-restore-mtime
 
@@ -109,9 +109,9 @@ git-clone-subset
 
 Uses `git clone` and `git filter-branch` to remove from the clone all but the requested files, along with their associated commit history.
 
-Clones a `repository` into a `destination` directory and runs on the clone `git filter-branch --prune-empty --tree-filter 'git rm ...' -- --all`
-to prune from history all files except the ones matching a `pattern`, effectively creating a clone with a subset of files (and history)
-of the original repository.
+Clones a `repository` into a `destination` directory and runs `git filter-branch --prune-empty --tree-filter 'git rm ...' -- --all`
+on the clone to prune from history all files except the ones matching a `pattern`, effectively creating a clone with a subset of files
+(and history) of the original repository.
 
 Useful for creating a new repository out of a set of files from another repository, migrating (only) their associated history.
 Very similar to what `git filter-branch --subdirectory-filter` does, but for a file pattern instead of just a single directory.
