@@ -42,7 +42,7 @@ and in EPEL repository for CentOS, Red Hat Enterprise Linux (RHEL), Oracle Linux
 Also available in Kali Linux, MidnightBDS mports, Mageia and possibly many others.
 
 
-To manually install and run from the repository, just clone the repository and add the installation directory to your `$PATH`
+**Manual install**: to run from the repository tree, just clone the it and add the installation directory to your `$PATH`:
 ```sh
 cd ~/some/dir
 git clone https://github.com/MestreLion/git-tools.git
