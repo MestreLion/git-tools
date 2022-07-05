@@ -20,17 +20,27 @@ If needed, the command to install dependencies for Debian-like distros (like Ubu
 Install
 -------
 
-On recent Debian, Ubuntu 16.04+, Mint and their derivatives, most tools are in the repositories as `git-restore-mtime`:
+For [Debian](https://tracker.debian.org/pkg/git-mestrelion-tools), [Ubuntu](https://launchpad.net/ubuntu/+source/git-mestrelion-tools),
+LinuxMint, Kali Linux, and their derivatives, most tools are in the repositories as `git-restore-mtime`:
 
 	sudo apt install git-restore-mtime
 
-On Fedora 27+ and EPEL 6+, as root:
+For [Fedora](https://src.fedoraproject.org/rpms/git-tools)
+and in EPEL repository for CentOS, Red Hat Enterprise Linux (RHEL), Oracle Linux and others, as root:
 
 	yum install git-tools
 
-Gentoo Testing, also as root:
+[Gentoo](https://packages.gentoo.org/packages/dev-vcs/git-tools) and Funtoo, also as root:
 
 	emerge dev-vcs/git-tools
+
+[MacPorts](https://ports.macports.org/port/git-tools/details/):
+
+	sudo port install git-tools
+
+
+Also available in Kali Linux, MidnightBDS mports, Mageia and possibly many others.
+
 
 To manually install and run from the repository, just clone the repository and add the installation directory to your `$PATH`
 ```sh
