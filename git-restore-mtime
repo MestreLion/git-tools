@@ -91,8 +91,7 @@ UTIME_KWS = {} if not UPDATE_SYMLINKS else {'follow_symlinks': False}
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="""Restore original modification time of files based on the date of the
-        most recent commit that modified them. Useful when generating release tarballs.""")
+        description=__doc__.split('\n\n')[0])
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--quiet', '-q', dest='loglevel',
@@ -101,76 +100,86 @@ def parse_args():
     group.add_argument('--verbose', '-v', action="count",
         help="Print additional information for each processed file.")
 
-    parser.add_argument('--git-dir', dest='gitdir', metavar="GITDIR",
-        help="""Path to the git repository, by default auto-discovered by git by searching
-                the current directory and its parents for a .git/ subfolder.""")
+    parser.add_argument('--git-dir', dest='gitdir', metavar="GITDIR", help="""
+        Path to the git repository, by default auto-discovered by searching
+        the current directory and its parents for a .git/ subdirectory.
+        """)
 
-    parser.add_argument('--work-tree', dest='workdir', metavar="WORKTREE",
-        help="""Path to the work tree root, by default the parent of GITDIR if it was
-                automatically discovered, or the current directory if GITDIR was set.""")
+    parser.add_argument('--work-tree', dest='workdir', metavar="WORKTREE", help="""
+        Path to the work tree root, by default the parent of GITDIR if it's
+        automatically discovered, or the current directory if GITDIR is set.
+        """)
 
-    parser.add_argument('--force', '-f', action="store_true",
+    parser.add_argument('--force', '-f', default=False, action="store_true",
         help="Force execution on trees with uncommitted changes.")
 
-    parser.add_argument('--merge', '-m', action="store_true",
-        help="""Include merge commits. Leads to more recent mtimes and more files per
-        commit, thus with the same mtime (which may or may not be what you want). Including
-        merge commits may lead to fewer commits being evaluated (all files are found sooner),
-        which improves performance, sometimes substantially. But, as merge commits are
-        usually huge, processing them may also take longer, sometimes substantially.
-        By default, merge logs are only used for files missing from regular commit logs.""")
+    parser.add_argument('--merge', '-m', default=False, action="store_true", help="""
+        Include merge commits.
+        Leads to more recent times and more files per commit, thus with the same
+        time, which may or may not be what you want.
+        Including merge commits may lead to fewer commits being evaluated as files
+        are found sooner, which can improve performance, sometimes substantially.
+        But as merge commits are usually huge, processing them may also take longer.
+        By default, merge commits are only used for files missing from regular commits.
+        """)
 
-    parser.add_argument('--first-parent', action="store_true",
-        help="""Consider only the first parent, the "main branch", when parsing merge
-        commit logs. Only effective when merge commits are included in the log, either
-        by --merge or to find missing files after first log parse. See --skip-missing.""")
+    parser.add_argument('--first-parent', default=False, action="store_true", help="""
+        Consider only the first parent, the "main branch", when evaluating merge commits.
+        Only effective when merge commits are processed, either when --merge is
+        used or when finding missing files after the first regular log search.
+        See --skip-missing.
+        """)
 
-    parser.add_argument('--skip-missing', '-s',
-        action="store_false", default=True, dest="missing",
-        help="""Do not try to find missing files. If some files were not found in regular
-        commit logs, by default it re-tries using merge commit logs for these files (if
-        --merge was not already used). This option disables this behavior, which may slightly
-        improve performance, but files found only in merge commits will not be updated.""")
+    parser.add_argument('--skip-missing', '-s', dest="missing", default=True,
+        action="store_false", help="""
+        Do not try to find missing files.
+        If merge commits were not evaluated with --merge and some files were not
+        found in regular commits, by default %(prog)s searches for these files
+        again in the merge commits.
+        This option disables this retry, so files found only in merge commits
+        will not have their timestamp updated.
+        """)
 
-    parser.add_argument('--no-directories', '-D',
-        action="store_false", default=True, dest='dirs',
-        help="""Do not update directory mtime for files created, renamed or deleted in it.
-        Note: just modifying a file will not update its directory mtime.""")
+    parser.add_argument('--no-directories', '-D', dest='dirs', default=True,
+        action="store_false", help="""
+        Do not update directory timestamps.
+        By default, use the time of its most recently created, renamed or deleted file.
+        Note that just modifying a file will NOT update its directory time.
+        """)
 
-    parser.add_argument('--test', '-t', action="store_true", default=False,
-        help="Test run: do not actually update any file")
+    parser.add_argument('--test', '-t', default=False, action="store_true",
+        help="Test run: do not actually update any file.")
 
-    parser.add_argument('--commit-time', '-c',
-        action='store_true', default=False, dest='commit_time',
-        help="Use commit time instead of author time")
+    parser.add_argument('--commit-time', '-c', dest='commit_time', default=False,
+        action='store_true', help="Use commit time instead of author time.")
 
-    parser.add_argument('--oldest-time', '-o',
-        action='store_true', default=False, dest='reverse_order',
-        help="""Set the mtime to the time of the first commit to mention a given file
-        instead of the most recent. This works by reversing the order in which the git
-        log is processed (i.e. from the oldest to the most recent commit on the current
-        branch, instead of from most recent to oldest). This may result in incorrect
-        behaviour if there are multiple files which have been renamed with the same name
-        in the current branch's history.""")
+    parser.add_argument('--oldest-time', '-o', dest='reverse_order', default=False,
+        action='store_true', help="""
+        Update times based on the oldest, instead of the most recent commit of a file.
+        This reverses the order in which the git log is processed to emulate a
+        file "creation" date. Note this will be inaccurate for files deleted and
+        re-created at later dates.
+        """)
 
-    parser.add_argument('--skip-older-than', metavar='SECONDS', type=int,
-        help="""Do not modify files that are older than %(metavar)s.
-        It can significantly improve performance if fewer files are processed.
-        Useful on CI builds, which can eventually switch workspace to different branch,
-        but mostly performs builds on the same one (e.g. master).""")
+    parser.add_argument('--skip-older-than', metavar='SECONDS', type=int, help="""
+        Ignore files that are currently older than %(metavar)s.
+        Useful in workflows that assume such files already have a correct timestamp,
+        as it may improve performance by processing fewer files.
+        """)
 
-    parser.add_argument('--unique-times', action="store_true", default=False,
-        help="""Set the microseconds to a unique value per commit.
-        It allows telling apart changes that would otherwise have identical
-        timestamps, as git's time accuracy is in seconds.""")
+    parser.add_argument('--unique-times', default=False, action="store_true", help="""
+        Set the microseconds to a unique value per commit.
+        Allows telling apart changes that would otherwise have identical timestamps,
+        as git's time accuracy is in seconds.
+        """)
 
-    parser.add_argument('pathspec', nargs='*', metavar='PATH',
-        help="""Only modify paths matching PATH, directories or files, relative to current
-        directory. Default is to modify all files handled by git, ignoring untracked files
-        and submodules.""")
+    parser.add_argument('pathspec', nargs='*', metavar='PATH', help="""
+        Only modify paths matching %(metavar)s, relative to current directory.
+        By default, update all but untracked files and submodules.
+        """)
 
     parser.add_argument('--version', '-V', action='version',
-        version='%(prog)s {version}'.format(version=__version__))
+        version='%(prog)s version {version}'.format(version=__version__))
 
     return parser.parse_args()
 
