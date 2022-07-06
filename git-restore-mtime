@@ -75,7 +75,6 @@ import subprocess
 import sys
 import time
 
-
 # Update symlinks only if the platform supports not following them
 UPDATE_SYMLINKS = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
 
@@ -117,7 +116,7 @@ def parse_args():
         merge commits may lead to fewer commits being evaluated (all files are found sooner),
         which improves performance, sometimes substantially. But, as merge commits are
         usually huge, processing them may also take longer, sometimes substantially.
-        By default merge logs are only used for files missing from regular commit logs.""")
+        By default, merge logs are only used for files missing from regular commit logs.""")
 
     parser.add_argument('--first-parent', action="store_true",
         help="""Consider only the first parent, the "main branch", when parsing merge
@@ -219,26 +218,26 @@ def touch(path, mtime):
 
 
 def touch_ns(path, mtime_ns):
-    """The actual mtime update, using nanosseconds for unique timestamps"""
+    """The actual mtime update, using nanoseconds for unique timestamps"""
     os.utime(path, None, ns=(mtime_ns, mtime_ns), **UTIME_KWS)
 
 
-def isodate(secs:int):
+def isodate(secs: int):
     # time.localtime() accepts floats, but discards fractional part
     return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(secs))
 
 
-def isodate_frac(secs:float):
+def isodate_frac(secs: float):
     # ~16% slower than isodate() for integers, but otherwise equivalent
     return datetime.datetime.fromtimestamp(secs).isoformat(sep=' ')
 
 
-def get_times(secs:str, _idx=0):
+def get_times(secs: str, _idx=0):
     mtime = int(secs)
     return mtime, isodate(mtime)
 
 
-def get_times_ns(secs:str, idx:int):
+def get_times_ns(secs: str, idx: int):
     # Time resolution for filesystems and functions:
     # ext-4 and other POSIX filesystems: 1 nanosecond
     # NTFS (Windows default): 100 nanoseconds
@@ -307,7 +306,8 @@ class Git:
         finally:
             self._proc = None
 
-    class Error(subprocess.CalledProcessError): pass
+    class Error(subprocess.CalledProcessError):
+        """Error from git executable"""
 
 
 def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
@@ -386,7 +386,8 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
 
 def main():
     start = time.time()  # yes, Wall time. CPU time is not realistic for users.
-    stats = {_: 0 for _ in ('loglines', 'commits', 'touches', 'errors', 'dirtouches', 'direrrors')}
+    stats = {_: 0 for _ in (
+        'loglines', 'commits', 'touches', 'errors', 'dirtouches', 'direrrors')}
 
     log.trace("Arguments: %s", args)
 
@@ -400,10 +401,10 @@ def main():
     # Do not work on dirty repositories, unless --force
     if not args.force and git.is_dirty():
         log.critical(
-         "ERROR: There are local changes in the working directory.\n"
-         "This could lead to undesirable results for modified files.\n"
-         "Please, commit your changes (or use --force) and try again.\n"
-         "Aborting")
+            "ERROR: There are local changes in the working directory.\n"
+            "This could lead to undesirable results for modified files.\n"
+            "Please, commit your changes (or use --force) and try again.\n"
+            "Aborting")
         return 1
 
     # Get the files managed by git and build file and dir list to be processed
@@ -422,7 +423,8 @@ def main():
                 continue
 
             # skip files which are older than given threshold
-            if args.skip_older_than and start - os.path.getmtime(fullpath) > args.skip_older_than:
+            if (args.skip_older_than
+                    and start - os.path.getmtime(fullpath) > args.skip_older_than):
                 continue
 
             # Always add them relative to worktree root
@@ -449,7 +451,7 @@ def main():
             filterlist = list(filelist)
             for i in range(0, len(filterlist), STEPMISSING):
                 parselog(filelist, dirlist, stats, git,
-                         merge=True, filterlist=filterlist[i:i+STEPMISSING])
+                         merge=True, filterlist=filterlist[i:i + STEPMISSING])
 
         # Still missing some?
         for file in filelist:
@@ -468,7 +470,7 @@ def main():
         "%f seconds\n"
         "%d log lines processed\n"
         "%d commits evaluated",
-        time.time()-start, stats['loglines'], stats['commits'])
+        time.time() - start, stats['loglines'], stats['commits'])
 
     if args.dirs:
         if stats['direrrors']: loginfo("%d directory update errors", stats['direrrors'])
@@ -495,7 +497,7 @@ if args.unique_times:
 if args.test:
     touch = dummy
 
-# UI done, it's show time!
+# UI done, it's showtime!
 try:
     sys.exit(main())
 except KeyboardInterrupt:
