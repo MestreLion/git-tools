@@ -75,6 +75,8 @@ import subprocess
 import sys
 import time
 
+__version__ = "2020.09+dev"
+
 # Update symlinks only if the platform supports not following them
 UPDATE_SYMLINKS = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
 
@@ -166,6 +168,9 @@ def parse_args():
         help="""Only modify paths matching PATH, directories or files, relative to current
         directory. Default is to modify all files handled by git, ignoring untracked files
         and submodules.""")
+
+    parser.add_argument('--version', '-V', action='version',
+        version='%(prog)s {version}'.format(version=__version__))
 
     return parser.parse_args()
 
