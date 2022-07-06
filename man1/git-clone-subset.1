@@ -55,7 +55,7 @@ single pattern is allowed: if more are required, use extglob's "|"
 syntax. Globs will be evaluated with bash's shopt dotglob set, so
 beware. Patterns should not contain spaces or special chars
 like " ' $ ( ) { } `, not even quoted or escaped, since that might
-interphere with the !() syntax after pattern expansion.
+interfere with the !() syntax after pattern expansion.
 .sp
 Pattern Examples:
 .sp
@@ -68,14 +68,14 @@ Pattern Examples:
 Renames are NOT followed. As a workaround, list the rename history
 with 'git log --follow --name-status --format='%H' -- file | grep "^[RAD]"'
 and include all multiple names of a file in the pattern, as
-in "currentname|oldname|initialname". As a side efect, if a different
+in "current_name|old_name|initial_name". As a side effect, if a different
 file has taken place of an old name, it will be preserved too, and
 there is no way around this using this tool.
 .sp
 There is no (easy) way to keep some files in a dir: using 'dir/foo*'
 as pattern will not work. So keep the whole dir and remove files
 afterwards, using git filter-branch and a (quite complex) combination
-of cloning, remote add, rebases, etc.
+of cloning, remote add, rebase, etc.
 .sp
 Pattern matching is quite limited, and many of bash's escaping and
 quoting does not work properly when pattern is expanded inside !().
