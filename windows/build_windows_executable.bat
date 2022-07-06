@@ -18,7 +18,8 @@ python.exe ..\git-restore-mtime --help
 
 REM pyinstaller uses upx by default to compress the executable
 REM When running the created executable this results in an error:
-REM git-restore-mtime.exe - Bad Image: %TEMP%\VCRUNTIME140.dll is either not designed to run on Windows or it contains an error (..)
+REM    git-restore-mtime.exe - Bad Image: %TEMP%\VCRUNTIME140.dll
+REM        is either not designed to run on Windows or it contains an error (..)
 REM Therefore run pyinstaller with the --noupx parameter
 pyinstaller.exe -F --noupx ..\git-restore-mtime
 
@@ -37,7 +38,9 @@ PAUSE
 
 ECHO.
 ECHO Installing/updating Chocolatey...
-@"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
+@"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass ^
+    -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" ^
+&& SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
 
 ECHO.
 ECHO Installing/updating Python...
@@ -49,7 +52,8 @@ pip.exe install --upgrade --trusted-host pypi.org --trusted-host files.pythonhos
 
 ECHO.
 ECHO Installing latest version of pyinstaller...
-pip.exe install --trusted-host pypi.org --trusted-host files.pythonhosted.org https://github.com/pyinstaller/pyinstaller/archive/develop.tar.gz
+pip.exe install --trusted-host pypi.org --trusted-host files.pythonhosted.org ^
+    https://github.com/pyinstaller/pyinstaller/archive/develop.tar.gz
 
 ECHO.
 ECHO Finished!

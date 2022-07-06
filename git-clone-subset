@@ -143,9 +143,10 @@ while read -r root; do
 
 done < <(git rev-list --max-parents=0 HEAD) &&
 
-# Deletes backups and reflogs, not needed in a clone
+# Delete backups and the reflog, not needed in a clone
 if [[ -e .git/refs/original/ ]] ; then
-	git "for-each-ref" --format="%(refname)" refs/original/ | xargs -n 1 git update-ref -d
+	git "for-each-ref" --format="%(refname)" refs/original/ |
+		xargs -n 1 git update-ref -d
 fi &&
 git reflog expire --expire=now --all &&
 git gc --prune=now

@@ -433,7 +433,8 @@ def main():
 
             # Symlink (to file, to dir or broken - git handles the same way)
             if not UPDATE_SYMLINKS and os.path.islink(fullpath):
-                log.warning("WARNING: Skipping symlink, OS does not support update: %s", path)
+                log.warning("WARNING: Skipping symlink, no OS support for updates: %s",
+                            path)
                 continue
 
             # skip files which are older than given threshold
