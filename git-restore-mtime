@@ -249,29 +249,29 @@ def get_times_ns(secs: str, idx: int):
     return mtime_ns, isodate_frac(mtime)
 
 
-# Git class and parselog(), the heart of the script ###########################
+# Git class and parse_log(), the heart of the script ##########################
 
 class Git:
     def __init__(self, workdir=None, gitdir=None):
         self.gitcmd = ['git']
         if workdir: self.gitcmd.extend(('--work-tree', workdir))
         if gitdir:  self.gitcmd.extend(('--git-dir',   gitdir))
-        self.workdir, self.gitdir = self._repodirs()
+        self.workdir, self.gitdir = self._get_repo_dirs()
         self._proc = None
 
-    def ls_files(self, pathlist=None):
-        return (normalize(_) for _ in self._run('ls-files --full-name', pathlist))
+    def ls_files(self, paths: list = None):
+        return (normalize(_) for _ in self._run('ls-files --full-name', paths))
 
     def is_dirty(self):
         return bool(self._run('diff --no-ext-diff --quiet', output=False))
 
-    def log(self, merge=False, first_parent=False, commit_time=False, reverse_order=False,
-            pathlist=None):
+    def log(self, merge=False, first_parent=False, commit_time=False,
+            reverse_order=False, paths: list = None):
         cmd = 'whatchanged --pretty={}'.format('%ct' if commit_time else '%at')
         if merge:         cmd += ' -m'
         if first_parent:  cmd += ' --first-parent'
         if reverse_order: cmd += ' --reverse'
-        return self._run(cmd, pathlist)
+        return self._run(cmd, paths)
 
     def terminate(self):
         if self._proc is None:
@@ -282,15 +282,15 @@ class Git:
             # Avoid errors on OpenBSD
             pass
 
-    def _repodirs(self):
+    def _get_repo_dirs(self):
         return (os.path.normpath(_) for _ in
-                self._run('rev-parse --show-toplevel --absolute-git-dir', check=True))
+            self._run('rev-parse --show-toplevel --absolute-git-dir', check=True))
 
-    def _run(self, cmdstr, pathlist=None, output=True, check=False):
+    def _run(self, cmdstr: str, paths: list = None, output=True, check=False):
         cmdlist = self.gitcmd + shlex.split(cmdstr)
-        if pathlist:
+        if paths:
             cmdlist.append('--')
-            cmdlist.extend(pathlist)
+            cmdlist.extend(paths)
         log.trace("Executing: %s", ' '.join(cmdlist))
         if not output:
             return subprocess.call(cmdlist)
@@ -310,9 +310,9 @@ class Git:
         """Error from git executable"""
 
 
-def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
+def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
     mtime = 0
-    strdate = isodate(0)
+    datestr = isodate(0)
     for line in git.log(
             merge,
             args.first_parent,
@@ -329,12 +329,12 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
         # Date line
         if not line[0] == ':':  # Faster than line.startswith(':')
             stats['commits'] += 1
-            mtime, strdate = get_times(line, stats['commits'])
+            mtime, datestr = get_times(line, stats['commits'])
             continue
 
         # File line
-        # If line describes a renaming, linetok has three tokens, otherwise two
-        linetok = line.split('\t')
+        # If line describes a renaming, tokens has three tokens, otherwise two
+        tokens = line.split('\t')
 
         # Possible statuses:
         # M: Modified (content changed)
@@ -343,8 +343,8 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
         # T: Type changed: to/from regular file, symlinks, submodules
         # R099: Renamed (moved), with % of unchanged content. 100 = pure rename
         # Not possible in log: C=Copied, U=Unmerged, X=Unknown, B=pairing Broken
-        status = linetok[0].split(' ')[-1]
-        file = linetok[-1]
+        status = tokens[0].split(' ')[-1]
+        file = tokens[-1]
 
         # Handles non-ASCII chars and OS path separator
         file = normalize(file)
@@ -353,7 +353,7 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
             stats['files'] -= 1
             log.debug("%d\t%d\t%d\t%s\t%s",
                       stats['loglines'], stats['commits'], stats['files'],
-                      strdate, file)
+                      datestr, file)
             filelist.remove(file)
             try:
                 touch(os.path.join(git.workdir, file), mtime)
@@ -367,7 +367,7 @@ def parselog(filelist, dirlist, stats, git, merge=False, filterlist=None):
             if status in ('A', 'D') and dirname in dirlist:
                 log.debug("%d\t%d\t-\t%s\t%s",
                           stats['loglines'], stats['commits'],
-                          strdate, "{}/".format(dirname or '.'))
+                          datestr, "{}/".format(dirname or '.'))
                 dirlist.remove(dirname)
                 try:
                     touch(os.path.join(git.workdir, dirname), mtime)
@@ -440,18 +440,19 @@ def main():
 
     # Process the log until all files are 'touched'
     log.debug("Line #\tLog #\tF.Left\tModification Time\tFile Name")
-    parselog(filelist, dirlist, stats, git, args.merge, args.pathspec)
+    parse_log(filelist, dirlist, stats, git, args.merge, args.pathspec)
 
     # Missing files
     if filelist:
         # Try to find them in merge logs, if not done already
         # (usually HUGE, thus MUCH slower!)
         if args.missing and not args.merge:
-            log.info("{0:,} files not found in log, trying merge commits".format(len(filelist)))
             filterlist = list(filelist)
-            for i in range(0, len(filterlist), STEPMISSING):
-                parselog(filelist, dirlist, stats, git,
-                         merge=True, filterlist=filterlist[i:i + STEPMISSING])
+            missing = len(filterlist)
+            log.info("{0:,} files not found in log, trying merge commits".format(missing))
+            for i in range(0, missing, STEPMISSING):
+                parse_log(filelist, dirlist, stats, git,
+                          merge=True, filterlist=filterlist[i:i + STEPMISSING])
 
         # Still missing some?
         for file in filelist:
@@ -459,13 +460,13 @@ def main():
 
     # Final statistics
     # Suggestion: use git-log --before=mtime to brag about skipped log entries
-    def loginfo(msg, *a, width=13):
+    def log_info(msg, *a, width=13):
         ifmt = '{:%d,}'    % (width,)  # not using 'n' for consistency with ffmt
         ffmt = '{:%d,.2f}' % (width,)
         # %-formatting lacks a thousand separator, must pre-render with .format()
         log.info(msg.replace('%d', ifmt).replace('%f', ffmt).format(*a))
 
-    loginfo(
+    log_info(
         "Statistics:\n"
         "%f seconds\n"
         "%d log lines processed\n"
@@ -473,14 +474,15 @@ def main():
         time.time() - start, stats['loglines'], stats['commits'])
 
     if args.dirs:
-        if stats['direrrors']: loginfo("%d directory update errors", stats['direrrors'])
-        loginfo("%d directories updated", stats['dirtouches'])
+        if stats['direrrors']: log_info("%d directory update errors", stats['direrrors'])
+        log_info("%d directories updated", stats['dirtouches'])
 
-    if stats['touches'] != stats['totalfiles']: loginfo("%d files", stats['totalfiles'])
-    if stats['files']:                          loginfo("%d files missing", stats['files'])
-    if stats['errors']:                         loginfo("%d file update errors", stats['errors'])
+    if stats['touches'] != stats['totalfiles']:
+                        log_info("%d files",              stats['totalfiles'])
+    if stats['files']:  log_info("%d files missing",      stats['files'])
+    if stats['errors']: log_info("%d file update errors", stats['errors'])
 
-    loginfo("%d files updated", stats['touches'])
+    log_info("%d files updated", stats['touches'])
 
     if args.test:
         log.info("TEST RUN - No files modified!")
