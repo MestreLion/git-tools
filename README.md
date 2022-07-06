@@ -20,8 +20,9 @@ If needed, the command to install dependencies for Debian-like distros (like Ubu
 Install
 -------
 
-For [Debian](https://tracker.debian.org/pkg/git-mestrelion-tools), [Ubuntu](https://launchpad.net/ubuntu/+source/git-mestrelion-tools),
-LinuxMint, Kali and their derivatives, in official repositories as `git-restore-mtime`:
+For [Debian](https://tracker.debian.org/pkg/git-mestrelion-tools),
+[Ubuntu](https://launchpad.net/ubuntu/+source/git-mestrelion-tools),
+LinuxMint, and their derivatives, in official repositories as `git-restore-mtime`:
 
 	sudo apt install git-restore-mtime
 
@@ -39,10 +40,10 @@ and in EPEL repository for CentOS, Red Hat Enterprise Linux (RHEL), Oracle Linux
 	sudo port install git-tools
 
 
-Also available in Kali Linux, MidnightBDS mports, Mageia and possibly many others.
+Also available in Kali Linux, MidnightBDS _mports_, Mageia, and possibly other distributions.
 
 
-**Manual install**: to run from the repository tree, just clone the it and add the installation directory to your `$PATH`:
+**Manual install**: to run from the repository tree, just clone and add the installation directory to your `$PATH`:
 ```sh
 cd ~/some/dir
 git clone https://github.com/MestreLion/git-tools.git
@@ -58,7 +59,8 @@ you can simply run the tools as if they were regular `git` subcommands! For exam
     git restore-mtime --test
 
 The magic? Git considers any executable named `git-*` in either `/usr/lib/git-core` or in `$PATH` to be a subcommand!
-It also integrates with `man`, triggering the manual pages if they're installed, such as when installing using your package manager:
+It also integrates with `man`, triggering the manual pages if they're installed,
+such as when installing using your package manager:
 
     git restore-mtime --help
     git help strip-merge
@@ -107,14 +109,18 @@ git-clone-subset
 
 *Clones a subset of a git repository*
 
-Uses `git clone` and `git filter-branch` to remove from the clone all but the requested files, along with their associated commit history.
+Uses `git clone` and `git filter-branch` to remove from the clone all but the requested files,
+along with their associated commit history.
 
-Clones a `repository` into a `destination` directory and runs `git filter-branch --prune-empty --tree-filter 'git rm ...' -- --all`
-on the clone to prune from history all files except the ones matching a `pattern`, effectively creating a clone with a subset of files
-(and history) of the original repository.
+Clones a `repository` into a `destination` directory and runs
+`git filter-branch --prune-empty --tree-filter 'git rm ...' -- --all`
+on the clone to prune from history all files except the ones matching a `pattern`,
+effectively creating a clone with a subset of files (and history) of the original repository.
 
-Useful for creating a new repository out of a set of files from another repository, migrating (only) their associated history.
-Very similar to what `git filter-branch --subdirectory-filter` does, but for a file pattern instead of just a single directory.
+Useful for creating a new repository out of a set of files from another repository,
+migrating (only) their associated history.
+Very similar to what `git filter-branch --subdirectory-filter` does,
+but for a file pattern instead of just a single directory.
 
 
 git-find-uncommitted-repos
@@ -132,8 +138,9 @@ git-rebase-theirs
 *Resolve rebase conflicts and failed cherry-picks by favoring 'theirs' version*
 
 When using `git rebase`, conflicts are usually wanted to be resolved by favoring the `working branch` version
-(the branch being rebased, *'theirs'* side in a rebase), instead of the `upstream` version (the base branch, *'ours'* side).
-But `git rebase --strategy -X theirs` is only available from git 1.7.3. For older versions, `git-rebase-theirs` is the solution.
+(the branch being rebased, *'theirs'* side in a rebase), instead of the `upstream` version
+(the base branch, *'ours'* side). But `git rebase --strategy -X theirs` is only available from git 1.7.3.
+For older versions, `git-rebase-theirs` is the solution.
 Despite the name, it's also useful for fixing failed cherry-picks.
 
 
@@ -147,8 +154,9 @@ Probably the most popular and useful tool, and the reason this repository was pa
 Git, unlike other version control systems, does not preserve the original timestamp of committed files.
 Whenever repositories are cloned, or branches/files are checked out, file timestamps are reset to the current date.
 While this behavior has its justifications (notably when using `make` to compile software),
-sometimes it is desirable to restore the original modification date of a file (for example, when generating release tarballs).
-As git does not provide any way to do that, `git-restore-mtime` tries to workaround this limitation.
+sometimes it is desirable to restore the original modification date of a file
+(for example, when generating release tarballs).
+As git does not provide any way to do that, `git-restore-mtime` tries to work around this limitation.
 
 For more information and background, see http://stackoverflow.com/a/13284229/624066
 
@@ -158,7 +166,7 @@ git:
   depth: false
 ```
 
-Similarly, when using Github Actions, make sure to include `fetch-depth: 0` in your checkout workflow,
+Similarly, when using GitHub Actions, make sure to include `fetch-depth: 0` in your checkout workflow,
 as described in its [documentation](https://github.com/actions/checkout#Fetch-all-history-for-all-tags-and-branches):
 
 ```yaml
@@ -187,7 +195,8 @@ Contributing
 
 Patches are welcome! Fork, hack, request pull!
 
-If you find a bug or have any enhancement request, please open a [new issue](https://github.com/MestreLion/git-tools/issues/new)
+If you find a bug or have any enhancement request, please open a
+[new issue](https://github.com/MestreLion/git-tools/issues/new)
 
 
 Author
