@@ -56,19 +56,19 @@ Usage
 If you installed using your operating system package manager, or if you added the cloned repository to your `$PATH`,
 you can simply run the tools as if they were regular `git` subcommands! For example:
 
-    git restore-mtime --test
+	git restore-mtime --test
 
 The magic? Git considers any executable named `git-*` in either `/usr/lib/git-core` or in `$PATH` to be a subcommand!
 It also integrates with `man`, triggering the manual pages if they're installed,
 such as when installing using your package manager:
 
-    git restore-mtime --help
-    git help strip-merge
+	git restore-mtime --help
+	git help strip-merge
 
 In case the manual pages are not installed in the system, such as when running from the cloned repository,
 you can still read the built-in help by directly invoking the tool:
 
-    git-clone-subset --help
+	git-clone-subset --help
 
 
 Uninstall
@@ -95,14 +95,15 @@ git-branches-rename
 
 Examples:
 
-	$ git-rename-branches bug bugfix
-	bug/128  -> bugfix/128
-	bug_test -> bugfix_test
+```console
+$ git-rename-branches bug bugfix
+bug/128  -> bugfix/128
+bug_test -> bugfix_test
 
-	$ git-rename-branches ma backup/ma
-	master -> backup/master
-	main   -> backup/main
-
+$ git-rename-branches ma backup/ma
+master -> backup/master
+main   -> backup/main
+```
 
 git-clone-subset
 ----------------
@@ -161,14 +162,13 @@ As git does not provide any way to do that, `git-restore-mtime` tries to work ar
 For more information and background, see http://stackoverflow.com/a/13284229/624066
 
 For TravisCI users, simply add this setting to `.travis.yml` so it clones the full repository history:
-```
+```yaml
 git:
   depth: false
 ```
 
 Similarly, when using GitHub Actions, make sure to include `fetch-depth: 0` in your checkout workflow,
 as described in its [documentation](https://github.com/actions/checkout#Fetch-all-history-for-all-tags-and-branches):
-
 ```yaml
 - uses: actions/checkout@v2
   with:
@@ -184,7 +184,7 @@ git-strip-merge
 Answer for "*How to set up a git driver to ignore a folder on merge?*", see http://stackoverflow.com/questions/3111515
 
 Example:
-```
+```console
 $ git checkout master
 $ git-strip-merge design photoshop/*.psd
 ```
