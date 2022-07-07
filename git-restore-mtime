@@ -133,9 +133,9 @@ def parse_args():
     parser.add_argument('--skip-missing', '-s', dest="missing", default=True,
         action="store_false", help="""
         Do not try to find missing files.
-        If merge commits were not evaluated with --merge and some files were not
-        found in regular commits, by default %(prog)s searches for these files
-        again in the merge commits.
+        If merge commits were not evaluated with --merge and some files were
+        not found in regular commits, by default %(prog)s searches for these
+        files again in the merge commits.
         This option disables this retry, so files found only in merge commits
         will not have their timestamp updated.
         """)
@@ -148,7 +148,7 @@ def parse_args():
         """)
 
     parser.add_argument('--test', '-t', default=False, action="store_true",
-        help="Test run: do not actually update any file.")
+        help="Test run: do not actually update any file timestamp.")
 
     parser.add_argument('--commit-time', '-c', dest='commit_time', default=False,
         action='store_true', help="Use commit time instead of author time.")
