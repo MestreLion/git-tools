@@ -89,7 +89,7 @@ UTIME_KWS = {} if not UPDATE_SYMLINKS else {'follow_symlinks': False}
 
 # Command-line interface ######################################################
 
-def parse_args():
+def parse_args(logger=None):
     parser = argparse.ArgumentParser(
         description=__doc__.split('\n\n')[0])
 
@@ -188,18 +188,21 @@ def parse_args():
     parser.add_argument('--version', '-V', action='version',
         version='%(prog)s version {version}'.format(version=__version__))
 
-    return parser.parse_args()
+    args_ = parser.parse_args()
+    if args_.verbose:
+        args_.loglevel = max(logging.TRACE, logging.DEBUG // args_.verbose)
+    if logger:
+        logger.setLevel(args_.loglevel)
+    return args_
 
 
 # Helper functions ############################################################
 
-def setup_logging(args_):
+def setup_logging():
     """Logging basic config, also adding TRACE level and its corresponding method"""
     logging.TRACE = TRACE = logging.DEBUG // 2
     logging.Logger.trace = lambda _, m, *a, **k: _.log(TRACE, m, *a, **k)
-    level = ((args_.verbose and max(TRACE, logging.DEBUG // args_.verbose))
-             or args_.loglevel)
-    logging.basicConfig(level=level, format='%(message)s')
+    logging.basicConfig(format='%(message)s')
     return logging.getLogger()
 
 
@@ -514,8 +517,8 @@ def main():
 
 
 # Keep only essential, global assignments here. Any other logic must be in main()
-args = parse_args()
-log = setup_logging(args)
+log = setup_logging()
+args = parse_args(logger=log)
 # Set the actual touch() and other functions based on command-line arguments
 if args.unique_times:
     touch = touch_ns
