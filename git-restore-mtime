@@ -110,6 +110,13 @@ def parse_args():
         automatically discovered, or the current directory if GITDIR is set.
         """)
 
+    # Do not add this to CLI before handling PATH nargs accordingly!
+    # parser.add_argument('--git-cwd', '-C', dest='cwd', metavar="DIR", help="""
+    #     Run as if git was started in directory %(metavar)s.
+    #     This affects how --work-tree, --git-dir and PATH arguments are handled.
+    #     See git --help for more information.
+    #     """)
+
     parser.add_argument('--force', '-f', default=False, action="store_true",
         help="Force execution on trees with uncommitted changes.")
 
@@ -268,10 +275,11 @@ def get_times_ns(secs: str, idx: int):
 # Git class and parse_log(), the heart of the script ##########################
 
 class Git:
-    def __init__(self, workdir=None, gitdir=None):
+    def __init__(self, workdir=None, gitdir=None, cwd=None):
         self.gitcmd = ['git']
         if workdir: self.gitcmd.extend(('--work-tree', workdir))
         if gitdir:  self.gitcmd.extend(('--git-dir',   gitdir))
+        if cwd:     self.gitcmd.extend(('-C',          cwd))
         self.workdir, self.gitdir = self._get_repo_dirs()
         self._proc = None
 
