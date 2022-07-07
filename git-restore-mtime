@@ -186,12 +186,22 @@ def parse_args():
         """)
 
     parser.add_argument('--version', '-V', action='version',
-        version='%(prog)s version {version}'.format(version=__version__))
+        version='%(prog)s version {version}'.format(version=get_version()))
 
     args_ = parser.parse_args()
     if args_.verbose:
         args_.loglevel = max(logging.TRACE, logging.DEBUG // args_.verbose)
     return args_
+
+
+def get_version(version=__version__):
+    if not version.endswith('+dev'):
+        return version
+    try:
+        cwd = os.path.dirname(os.path.realpath(__file__))
+        return Git(cwd=cwd, errors=False).describe().lstrip('v')
+    except Git.Error:
+        return '-'.join((version, "unknown"))
 
 
 # Helper functions ############################################################
@@ -275,8 +285,9 @@ def get_times_ns(secs: str, idx: int):
 # Git class and parse_log(), the heart of the script ##########################
 
 class Git:
-    def __init__(self, workdir=None, gitdir=None, cwd=None):
+    def __init__(self, workdir=None, gitdir=None, cwd=None, errors=True):
         self.gitcmd = ['git']
+        self.errors = errors
         if workdir: self.gitcmd.extend(('--work-tree', workdir))
         if gitdir:  self.gitcmd.extend(('--git-dir',   gitdir))
         if cwd:     self.gitcmd.extend(('-C',          cwd))
@@ -318,16 +329,19 @@ class Git:
         if paths:
             cmdlist.append('--')
             cmdlist.extend(paths)
+        popen_args = dict(universal_newlines=True)
+        if not self.errors:
+            popen_args['stderr'] = subprocess.DEVNULL
         log.trace("Executing: %s", ' '.join(cmdlist))
         if not output:
-            return subprocess.call(cmdlist)
+            return subprocess.call(cmdlist, **popen_args)
         if check:
             try:
-                stdout = subprocess.check_output(cmdlist, universal_newlines=True)
+                stdout: str = subprocess.check_output(cmdlist, **popen_args)
                 return stdout.splitlines()
             except subprocess.CalledProcessError as e:
                 raise self.Error(e.returncode, e.cmd, e.output, e.stderr)
-        self._proc = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, universal_newlines=True)
+        self._proc = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, **popen_args)
         try:
             return (_.strip() for _ in self._proc.stdout)
         finally:
