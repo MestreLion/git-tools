@@ -297,6 +297,9 @@ class Git:
         if reverse_order: cmd += ' --reverse'
         return self._run(cmd, paths)
 
+    def describe(self):
+        return self._run('describe --tags', check=True)[0]
+
     def terminate(self):
         if self._proc is None:
             return
