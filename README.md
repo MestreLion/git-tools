@@ -29,7 +29,7 @@ LinuxMint, and their derivatives, in official repositories as `git-restore-mtime
 For [Fedora](https://src.fedoraproject.org/rpms/git-tools)
 and in EPEL repository for CentOS, Red Hat Enterprise Linux (RHEL), Oracle Linux and others, as root:
 
-	yum install git-tools
+	dnf install git-tools  # 'yum' if using older CentOS/RHEL releases
 
 [Gentoo](https://packages.gentoo.org/packages/dev-vcs/git-tools) and Funtoo, also as root:
 
