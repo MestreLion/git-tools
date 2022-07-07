@@ -199,16 +199,18 @@ def setup_logging(args_):
 def normalize(path):
     r"""Normalize paths from git, handling non-ASCII characters.
 
-    Git for Windows, as of v1.7.10, stores paths as UTF-8 normalization form C. If path
-    contains non-ASCII or non-printable chars it outputs the UTF-8 in octal-escaped
-    notation, double-quoting the whole path. Double-quotes and backslashes are also escaped.
-
+    Git stores paths as UTF-8 normalization form C.
+    If path contains non-ASCII or non-printable characters, git outputs the UTF-8
+    in octal-escaped notation, escaping double-quotes and backslashes, and then
+    double-quoting the whole path.
     https://git-scm.com/docs/git-config#Documentation/git-config.txt-corequotePath
-    https://github.com/msysgit/msysgit/wiki/Git-for-Windows-Unicode-Support
-    https://github.com/git/git/blob/master/Documentation/i18n.txt
 
-    Example on git output, this function reverts this:
-    r'back\slash_double"quote_açaí' -> r'"back\\slash_double\"quote_a\303\247a\303\255"'
+    This function reverts this encoding, so:
+    normalize(r'"Back\\slash_double\"quote_a\303\247a\303\255"') =>
+        r'Back\slash_double"quote_açaí')
+
+    See notes on `windows/non-ascii-paths.txt` about path encodings on non-UTF-8
+    platforms and filesystems.
     """
     if path and path[0] == '"':
         # Python 2: path = path[1:-1].decode("string-escape")

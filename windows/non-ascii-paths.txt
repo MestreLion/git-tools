@@ -1,0 +1,53 @@
+For git-restore-mtime to work, path name encoding used by Git and Python must agree,
+  and that might depend on the underlying filesystem encoding. So:
+
+- If filesystem encoding is UTF-8 normalization form C, it's all good. All hail Linux!
+
+- On Mac, HFS+ uses UTF-8, but not normalization form C, so letters with accents
+    might use 2 Unicode code-points. Does Git properly deals with this? No idea.
+    https://developer.apple.com/library/archive/technotes/tn/tn1150.html#UnicodeSubtleties
+    https://stackoverflow.com/a/9758019/624066
+
+- On Windows, native NTFS encoding *might* be UTF-16 or something else, and Git
+    (on Windows) might or might not transcode that to UTF-8 norm C when storing.
+    Git doc is not conclusive enough, depending on how you interpret this:
+    https://github.com/git/git/blob/master/Documentation/i18n.txt
+
+		Git is to some extent character encoding agnostic.
+		 - Path names are encoded in UTF-8 normalization form C. This
+		   applies to tree objects, the index file, ref names, as well as
+		   path names in command line arguments, environment variables
+		   and config files.
+		+
+		Note that Git at the core level treats path names simply as
+		sequences of non-NUL bytes, there are no path name encoding
+		conversions (except on Mac and Windows). Therefore, using
+		non-ASCII path names will mostly work even on platforms and file
+		systems that use legacy extended ASCII encodings. However,
+		repositories created on such systems will not work properly on
+		UTF-8-based systems (e.g. Linux, Mac, Windows) and vice versa.
+		Additionally, many Git-based tools simply assume path names to
+		be UTF-8 and will fail to display other encodings correctly.
+
+- Also worth reading: https://github.com/git-for-windows/git/wiki/FAQ, specially
+    "Some native console programs don't work when run from Git Bash. How to fix it?"
+    and https://github.com/msysgit/msysgit/wiki/Git-for-Windows-Unicode-Support
+
+- Terminal might play a role. Git for Windows apparently uses `minitty`, check
+    if (and how) it performs transcoding. Same for PowerShell, if applicable.
+
+- Setting `git config core.quotepath off` might fix issues.
+    On Mac, `core.precomposeunicode` may play a role.
+
+
+- Using `-z` in `ls-files` and `whatchanged` is an option to consider.
+   For reading NUL-delimited data, see https://stackoverflow.com/q/9237246/624066
+
+Bottom line, the following encodings must all agree with each other:
+- Git ls-files / whatchanged ASCII escaping when core.quotepath on (the default)
+- Git ls-files / whatchanged binary output when core.quotepath off
+- Python `Popen.stdout` decoding when using `universal_newlines=True`/`text=True`,
+  (or specified `encoding`) if quotepath off
+- normalize() un-escape algorithm if quotepath on. It currently assumes UTF-8 escaping
+- paths in args.{pathspec,gitdir,workdir,...}
+- path parameter for os.utime(), os.path.dirname() (if args.pathspec)
