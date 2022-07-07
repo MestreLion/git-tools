@@ -266,9 +266,9 @@ def get_times_ns(secs: str, idx: int):
     # NTFS (Windows default): 100 nanoseconds
     # datetime.datetime() (due to 64-bit float epoch): 1 microsecond
     s = int(secs)
-    us = idx % 10**6
-    mtime = s + us / 10**6
-    mtime_ns = s * 10**9 + us * 1000
+    us = idx % 1000000  # 10**6
+    mtime = s + us / 1000000  # 10**6
+    mtime_ns = s * 1000000000 + us * 1000  # 10**9
     return mtime_ns, isodate_frac(mtime)
 
 
