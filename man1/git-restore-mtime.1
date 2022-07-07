@@ -11,8 +11,7 @@ recent commit that modified them
 .TP 18
 .B git-restore-mtime
 .RB [ -h ]
-.RB [ --quiet ]
-.RB [ --verbose ]
+.RB [ --quiet | --verbose ]
 .br
 .RB [ --work-tree
 .IR WORKDIR ]
@@ -31,6 +30,7 @@ recent commit that modified them
 .br
 .RB [ --skip-older-than ]
 .RB [ --unique-times ]
+.RB [ --version ]
 .br
 .RI [ pathspec
 .RI [ pathspec ...]]
@@ -53,8 +53,8 @@ show help message and exit
 suppress informative messages and summary statistics.
 .TP 8
 .BR \-\-verbose , \-v
-print additional information for each processed file.
-Overwrites --quiet.
+Print additional information for each processed file.
+Specify twice to further increase verbosity.
 .TP 8
 .BI \-\-git-dir\  GITDIR
 Path to the git repository, by default auto-discovered by searching

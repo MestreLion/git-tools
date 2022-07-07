@@ -97,8 +97,10 @@ def parse_args():
     group.add_argument('--quiet', '-q', dest='loglevel',
         action="store_const", const=logging.WARNING, default=logging.INFO,
         help="Suppress informative messages and summary statistics.")
-    group.add_argument('--verbose', '-v', action="count",
-        help="Print additional information for each processed file.")
+    group.add_argument('--verbose', '-v', action="count", help="""
+        Print additional information for each processed file.
+        Specify twice to further increase verbosity.
+        """)
 
     parser.add_argument('--git-dir', dest='gitdir', metavar="GITDIR", help="""
         Path to the git repository, by default auto-discovered by searching
