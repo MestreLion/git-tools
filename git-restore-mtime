@@ -80,6 +80,9 @@ __version__ = "2020.09+dev"
 # Update symlinks only if the platform supports not following them
 UPDATE_SYMLINKS = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
 
+# Call os.path.normpath() only if not in a POSIX platform (Windows)
+NORMALIZE_PATHS = (os.path.sep != '/')
+
 # How many files to process in each batch when re-trying merge commits
 STEPMISSING = 100
 
@@ -246,8 +249,10 @@ def normalize(path):
                 .decode('unicode-escape')  # Perform the actual octal-escaping decode
                 .encode('latin1')          # 1:1 mapping to bytes, forming UTF-8 encoding
                 .decode('utf8'))           # Decode from UTF-8
-    # Make sure the slash matches the OS; for Windows we need a backslash
-    return os.path.normpath(path)
+    if NORMALIZE_PATHS:
+        # Make sure the slash matches the OS; for Windows we need a backslash
+        path = os.path.normpath(path)
+    return path
 
 
 def dummy(*_args, **_kwargs):
