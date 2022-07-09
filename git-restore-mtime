@@ -193,6 +193,7 @@ def parse_args():
     args_ = parser.parse_args()
     if args_.verbose:
         args_.loglevel = max(logging.TRACE, logging.DEBUG // args_.verbose)
+    args_.debug = args_.loglevel == logging.DEBUG
     return args_
 
 
@@ -262,26 +263,18 @@ def isodate(secs: int):
     return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(secs))
 
 
-def isodate_frac(secs: float):
-    # ~16% slower than isodate() for integers, but otherwise equivalent
-    return datetime.datetime.fromtimestamp(secs).isoformat(sep=' ')
+def isodate_ns(ns: int):
+    # for integers fromtimestamp() is equivalent and ~16% slower than isodate()
+    return datetime.datetime.fromtimestamp(ns / 1000000000).isoformat(sep=' ')
 
 
-def get_times(secs: str, _idx=0):
-    mtime = int(secs)
-    return mtime, isodate(mtime)
-
-
-def get_times_ns(secs: str, idx: int):
+def get_mtime_ns(secs: int, idx: int):
     # Time resolution for filesystems and functions:
     # ext-4 and other POSIX filesystems: 1 nanosecond
     # NTFS (Windows default): 100 nanoseconds
     # datetime.datetime() (due to 64-bit float epoch): 1 microsecond
-    s = int(secs)
     us = idx % 1000000  # 10**6
-    mtime = s + us / 1000000  # 10**6
-    mtime_ns = s * 1000000000 + us * 1000  # 10**9
-    return mtime_ns, isodate_frac(mtime)
+    return 1000 * (1000000 * secs + us)
 
 
 # Git class and parse_log(), the heart of the script ##########################
@@ -370,9 +363,13 @@ def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
             continue
 
         # Date line
-        if not line[0] == ':':  # Faster than line.startswith(':')
+        if line[0] != ':':  # Faster than `not line.startswith(':')`
             stats['commits'] += 1
-            mtime, datestr = get_times(line, stats['commits'])
+            mtime = int(line)
+            if args.unique_times:
+                mtime = get_mtime_ns(mtime, stats['commits'])
+            if args.debug:
+                datestr = isodate(mtime)
             continue
 
         # File line: three tokens if it describes a renaming, otherwise two
@@ -393,9 +390,10 @@ def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
 
         if file in filelist:
             stats['files'] -= 1
-            log.debug("%d\t%d\t%d\t%s\t%s",
-                      stats['loglines'], stats['commits'], stats['files'],
-                      datestr, file)
+            if args.debug:
+                log.debug("%d\t%d\t%d\t%s\t%s",
+                          stats['loglines'], stats['commits'], stats['files'],
+                          datestr, file)
             filelist.remove(file)
             try:
                 touch(os.path.join(git.workdir, file), mtime)
@@ -407,9 +405,10 @@ def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
         if args.dirs and status in ('A', 'D'):
             dirname = os.path.dirname(file)
             if dirname in dirlist:
-                log.debug("%d\t%d\t-\t%s\t%s",
-                          stats['loglines'], stats['commits'],
-                          datestr, "{}/".format(dirname or '.'))
+                if args.debug:
+                    log.debug("%d\t%d\t-\t%s\t%s",
+                              stats['loglines'], stats['commits'],
+                              datestr, "{}/".format(dirname or '.'))
                 dirlist.remove(dirname)
                 try:
                     touch(os.path.join(git.workdir, dirname), mtime)
@@ -535,10 +534,12 @@ def main():
 # Keep only essential, global assignments here. Any other logic must be in main()
 log = setup_logging()
 args = parse_args()
+
 # Set the actual touch() and other functions based on command-line arguments
 if args.unique_times:
     touch = touch_ns
-    get_times = get_times_ns
+    isodate = isodate_ns
+
 # Make sure this is always set last to ensure --test behaves as intended
 if args.test:
     touch = dummy
