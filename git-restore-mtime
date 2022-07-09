@@ -209,7 +209,7 @@ def get_version(version=__version__):
 # Helper functions ############################################################
 
 def setup_logging():
-    """Logging basic config, also adding TRACE level and its corresponding method"""
+    """Add TRACE logging level and corresponding method, return the root logger"""
     logging.TRACE = TRACE = logging.DEBUG // 2
     logging.Logger.trace = lambda _, m, *a, **k: _.log(TRACE, m, *a, **k)
     return logging.getLogger()
@@ -375,8 +375,7 @@ def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
             mtime, datestr = get_times(line, stats['commits'])
             continue
 
-        # File line
-        # If line describes a renaming, tokens has three tokens, otherwise two
+        # File line: three tokens if it describes a renaming, otherwise two
         tokens = line.split('\t')
 
         # Possible statuses:
