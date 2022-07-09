@@ -112,6 +112,10 @@ Ignore files that are currently older than SECONDS.
 Useful in workflows that assume such files already have a correct timestamp,
 as it may improve performance by processing fewer files.
 .TP 8
+.BR \-\-skip-older-than-commit , \-N
+Ignore files older than the timestamp it would be updated to.
+Such files may be considered "original", likely in the author's repository.
+.TP 8
 .BR \-\-unique-times
 Set the microseconds to a unique value per commit.
 Allows telling apart changes that would otherwise have identical timestamps,

@@ -176,6 +176,12 @@ def parse_args():
         as it may improve performance by processing fewer files.
         """)
 
+    parser.add_argument('--skip-older-than-commit', '-N', default=False,
+        action='store_true', help="""
+        Ignore files older than the timestamp it would be updated to.
+        Such files may be considered "original", likely in the author's repository.
+        """)
+
     parser.add_argument('--unique-times', default=False, action="store_true", help="""
         Set the microseconds to a unique value per commit.
         Allows telling apart changes that would otherwise have identical timestamps,
@@ -275,6 +281,10 @@ def get_mtime_ns(secs: int, idx: int):
     # datetime.datetime() (due to 64-bit float epoch): 1 microsecond
     us = idx % 1000000  # 10**6
     return 1000 * (1000000 * secs + us)
+
+
+def get_mtime_path(path):
+    return os.path.getmtime(path)
 
 
 # Git class and parse_log(), the heart of the script ##########################
@@ -390,11 +400,14 @@ def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
 
         if file in filelist:
             stats['files'] -= 1
+            filelist.remove(file)
+            if args.skip_older_than_commit and get_mtime_path(file) <= mtime:
+                stats['skip'] += 1
+                continue
             if args.debug:
                 log.debug("%d\t%d\t%d\t%s\t%s",
                           stats['loglines'], stats['commits'], stats['files'],
                           datestr, file)
-            filelist.remove(file)
             try:
                 touch(os.path.join(git.workdir, file), mtime)
                 stats['touches'] += 1
@@ -427,8 +440,8 @@ def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
 
 def main():
     start = time.time()  # yes, Wall time. CPU time is not realistic for users.
-    stats = {_: 0 for _ in (
-        'loglines', 'commits', 'touches', 'errors', 'dirtouches', 'direrrors')}
+    stats = {_: 0 for _ in ('loglines', 'commits', 'touches', 'skip', 'errors',
+                            'dirtouches', 'direrrors')}
 
     logging.basicConfig(level=args.loglevel, format='%(message)s')
     log.trace("Arguments: %s", args)
@@ -467,7 +480,7 @@ def main():
 
             # skip files which are older than given threshold
             if (args.skip_older_than
-                    and start - os.path.getmtime(fullpath) > args.skip_older_than):
+                    and start - get_mtime_path(fullpath) > args.skip_older_than):
                 continue
 
             # Always add them relative to worktree root
@@ -522,6 +535,7 @@ def main():
 
     if stats['touches'] != stats['totalfiles']:
                         log_info("%d files",              stats['totalfiles'])
+    if stats['skip']:   log_info("%d files skipped",      stats['skip'])
     if stats['files']:  log_info("%d files missing",      stats['files'])
     if stats['errors']: log_info("%d file update errors", stats['errors'])
 
