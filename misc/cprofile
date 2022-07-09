@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+#
+# cprofile - profiling git-restore-mtime
+#
+# This file is part of git-tools, see <https://github.com/MestreLion/git-tools>
+# Copyright (C) 2022 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
+# License: GPLv3 or later, at your choice. See <http://www.gnu.org/licenses/gpl>
+#------------------------------------------------------------------------------
+
+myself="${0##*/}"
+here="${0%/*}"
+
+#------------------------------------------------------------------------------
+now() { date +%Y%m%d%H%M%S; }
+exists() { type "$@" >/dev/null 2>&1; }
+command-latest() {
+	local prefix=$1
+	compgen -c "$prefix" |
+	grep -P "^${prefix}\d[.\d]*\$" |
+	sort -ruV |
+	head -n1
+}
+pip-install() {
+	local packages=( "$@" )
+	local pip; pip=$(command-latest pip)
+	local python; python=${python:-$(command-latest python)}
+	if exists "${packages[@]}"; then return; fi
+	if exists pipx; then
+		pipx install -- "${packages[@]}"
+		return
+	fi
+	if ! exists "$pip"; then
+		sudo apt install python3-pip
+	fi
+	"$python" -m pip install --user "${packages[@]}"
+}
+#------------------------------------------------------------------------------
+
+outdir=${here}/data
+repo=${PWD##*/}
+pstats=${outdir}/${repo}.$(now).pstats
+python=$(command-latest python)
+
+#------------------------------------------------------------------------------
+usage() {
+cat <<- USAGE
+	Usage: $myself [options]
+USAGE
+if [[ "$1" ]] ; then
+	cat <<- USAGE
+		Try '$myself --help' for more information.
+	USAGE
+	exit 1
+fi
+cat <<-USAGE
+
+	Profiling git-restore-mtime. Run from a repository root
+
+	Options:
+	-h|--help     - show this page.
+
+	Copyright (C) 2022 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
+	License: GPLv3 or later. See <http://www.gnu.org/licenses/gpl.html>
+USAGE
+exit 0
+}
+invalid() { echo "$myself: invalid option $1" ; usage 1 ; }
+missing() { echo "$myself: missing ${1:+$1 }operand" ; usage 1 ; }
+
+# Loop options
+while (( $# )); do
+	case "$1" in
+	-h|--help   ) usage;;
+	-P|--python ) shift; python=${1:-};;
+	--python=*  ) python=${1#*=};;
+	--          ) shift        ; break;;
+	-*          ) invalid "$1" ; break;;
+	*           )                break;;
+	esac
+	shift
+done
+
+[[ "$python" ]] || missing --python
+if ! exists "$python"; then "$python"; usage 1; fi
+
+#------------------------------------------------------------------------------
+pip-install gprof2dot
+
+mkdir -p -- "$outdir"
+"$python" -m cProfile -o "$pstats" "$here"/../git-restore-mtime
+gprof2dot -f pstats -o "$pstats".dot -- "$pstats"
+xdg-open "$pstats".dot

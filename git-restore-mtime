@@ -36,6 +36,7 @@ on trees with uncommitted changes.
 # - Update "Statistics for some large projects" with modern hardware and repositories.
 # - Create a README.md for git-restore-mtime alone. It deserves extensive documentation
 #   - Move Statistics there
+# - See git-extras as a good example on project structure and documentation
 
 # FIXME:
 # - When current dir is outside the worktree, e.g. using --work-tree, `git ls-files`

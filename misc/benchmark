@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# benchmark - benchmarking git-restore-mtime
+#
+# This file is part of git-tools, see <https://github.com/MestreLion/git-tools>
+# Copyright (C) 2022 Rodrigo Silva (MestreLion) <linux@rodrigosilva.com>
+# License: GPLv3 or later, at your choice. See <http://www.gnu.org/licenses/gpl>
+#------------------------------------------------------------------------------
+
+here="${0%/*}"
+case "${1:-}" in
+touch)  cmd=( touch-all );;
+min)    cmd=( "$here"/git-restore-mtime-min );;
+utimes) cmd=( "$here"/git-utimes );;
+*)      cmd=( "$here"/../git-restore-mtime "$@" );;
+esac
+
+# flush() could be more complete: https://stackoverflow.com/a/44266604/624066
+flush() { sync; echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null; }
+touch-all() { i=0; while IFS= read -r file; do ((i++)); touch "$file";
+	done < <(git ls-files); echo "$i files"; }
+
+# touch variations, only works if [[ $(find . -name '* *' | wc -l) == 0 ]]
+touch-for() ( i=0; for file in $(git ls-files); do ((i++)); touch "$file";
+	done; echo "$i files"; )
+touch-min() ( for file in $(git ls-files); do touch "$file"; done; )
+
+touch-all
+git status >/dev/null 2>&1  # for the linux kernel
+flush
+time { "${cmd[@]}"; }
