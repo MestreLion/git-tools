@@ -404,9 +404,9 @@ def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
                 log.error("ERROR: %s", e)
                 stats['errors'] += 1
 
-        if args.dirs:
+        if args.dirs and status in ('A', 'D'):
             dirname = os.path.dirname(file)
-            if status in ('A', 'D') and dirname in dirlist:
+            if dirname in dirlist:
                 log.debug("%d\t%d\t-\t%s\t%s",
                           stats['loglines'], stats['commits'],
                           datestr, "{}/".format(dirname or '.'))
