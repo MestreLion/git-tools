@@ -72,6 +72,7 @@ import datetime
 import logging
 import os.path
 import shlex
+import signal
 import subprocess
 import sys
 import time
@@ -568,5 +569,6 @@ if args.test:
 try:
     sys.exit(main())
 except KeyboardInterrupt:
-    log.info("Aborting")
-    sys.exit(-1)
+    log.info("\nAborting")
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    os.kill(os.getpid(), signal.SIGINT)
