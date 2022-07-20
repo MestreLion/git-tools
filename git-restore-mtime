@@ -31,7 +31,6 @@ on trees with uncommitted changes.
 
 # TODO:
 # - Add -z on git whatchanged/ls-files, so we don't deal with filename decoding
-#   or OS normalization. See issue #9 for a working proof-of-concept by @wafer-li
 # - When Python is bumped to 3.7, use text instead of universal_newlines on subprocess
 # - Update "Statistics for some large projects" with modern hardware and repositories.
 # - Create a README.md for git-restore-mtime alone. It deserves extensive documentation
