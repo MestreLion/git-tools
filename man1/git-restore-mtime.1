@@ -1,4 +1,4 @@
-.TH GIT-RESTORE-MTIME 1 2021-09-04
+.TH GIT-RESTORE-MTIME 1 2022-07-27
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -30,7 +30,8 @@ recent commit that modified them
 .RB [ --commit-time ]
 .RB [ --oldest-time ]
 .br
-.RB [ --skip-older-than ]
+.RB [ --skip-older-than
+.IR SECONDS ]
 .RB [ --unique-times ]
 .RB [ --version ]
 .br
@@ -48,18 +49,18 @@ Only modify paths matching \fIPATHSPEC\fR, relative to current directory.
 By default, update all but untracked files and submodules.
 .SS Optional arguments:
 .TP 8
-.BR \-h , \ \-\-help
+.BR \-h ,\  \-\-help
 show help message and exit
 .TP 8
 .BR \-\-quiet , \-q
-suppress informative messages and summary statistics.
+Suppress informative messages and summary statistics.
 .TP 8
 .BR \-\-verbose , \-v
 Print additional information for each processed file.
 Specify twice to further increase verbosity.
 .TP 8
 .BI \-C\  DIRECTORY\fR,\  \-\-cwd\  DIRECTORY
-Run as if \fBgit-restore-mtime\fR was started in directory \fIDIRECTORY\fR.
+Run as if \fBrestore-mtime\fR was started in directory \fIDIRECTORY\fR.
 This affects how \fB--work-tree\fR, \fB--git-dir\fR and \fIPATHSPEC\fR arguments
 are handled.
 See \fBgit\fR(1) for more information.
@@ -72,10 +73,10 @@ the current directory and its parents for a .git/ subdirectory.
 Path to the work tree root, by default the parent of GITDIR if it's
 automatically discovered, or the current directory if GITDIR is set.
 .TP 8
-.BR \-\-force , \-f
+.BR \-\-force ,\  \-f
 Force execution on trees with uncommitted changes.
 .TP 8
-.BR \-\-merge , \-m
+.BR \-\-merge ,\  \-m
 Include merge commits.
 Leads to more recent times and more files per commit, thus with the same
 time, which may or may not be what you want.
@@ -90,7 +91,7 @@ Only effective when merge commits are processed, either when --merge is
 used or when finding missing files after the first regular log search.
 See --skip-missing.
 .TP 8
-.BR \-\-skip-missing , \-s
+.BR \-\-skip-missing ,\  \-s
 Do not try to find missing files.
 If merge commits were not evaluated with --merge and some files were
 not found in regular commits, by default \fBrestore-mtime\fR searches for these
@@ -98,29 +99,29 @@ files again in the merge commits.
 This option disables this retry, so files found only in merge commits
 will not have their timestamp updated.
 .TP 8
-.BR \-\-no-directories , \-D
+.BR \-\-no-directories ,\  \-D
 Do not update directory timestamps.
 By default, use the time of its most recently created, renamed or deleted file.
 Note that just modifying a file will NOT update its directory time.
 .TP 8
-.BR \-\-test , \-t
+.BR \-\-test ,\  \-t
 Test run: do not actually update any file timestamp.
 .TP 8
-.BR \-\-commit-time , \-c
+.BR \-\-commit-time ,\  \-c
 Use commit time instead of author time.
 .TP 8
-.BR \-\-oldest-time , \-o
+.BR \-\-oldest-time ,\  \-o
 Update times based on the oldest, instead of the most recent commit of a file.
 This reverses the order in which the git log is processed to emulate a
 file "creation" date. Note this will be inaccurate for files deleted and
 re-created at later dates.
 .TP 8
-.BR \-\-skip-older-than SECONDS
+.BI \-\-skip-older-than\  SECONDS
 Ignore files that are currently older than SECONDS.
 Useful in workflows that assume such files already have a correct timestamp,
 as it may improve performance by processing fewer files.
 .TP 8
-.BR \-\-skip-older-than-commit , \-N
+.BR \-\-skip-older-than-commit ,\  \-N
 Ignore files older than the timestamp it would be updated to.
 Such files may be considered "original", likely in the author's repository.
 .TP 8
@@ -129,7 +130,7 @@ Set the microseconds to a unique value per commit.
 Allows telling apart changes that would otherwise have identical timestamps,
 as git's time accuracy is in seconds.
 .TP 8
-.BR \-\-version, \-V
+.BR \-\-version ,\  \-V
 show program's version number and exit
 .SH KNOWN ISSUES
 Renames are poorly handled: it always changes the timestamps
@@ -139,8 +140,10 @@ Directory timestamps are also limited to being modified
 only when files are added (created) or deleted in them.
 .br
 In very large repositories, after running \fBrestore-mtime\fR to modify
-the timestamp of several files, further git operations may emit the error
-.B fatal: mmap failed: Cannot allocate memory.
+the timestamp of several files, further git operations may emit the error:
+.br
+.B \ \ fatal: mmap failed: Cannot allocate memory.
+.br
 This is harmless, and can be fixed by running \fBgit-status\fR(1).
 .SH SEE ALSO
 .B https://github.com/MestreLion/git-tools
