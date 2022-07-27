@@ -106,6 +106,12 @@ def parse_args():
         Specify twice to further increase verbosity.
         """)
 
+    parser.add_argument('--cwd', '-C', metavar="DIRECTORY", help="""
+        Run as if %(prog)s was started in directory %(metavar)s.
+        This affects how --work-tree, --git-dir and PATH arguments are handled.
+        See 'man 1 git' or 'git --help' for more information.
+        """)
+
     parser.add_argument('--git-dir', dest='gitdir', metavar="GITDIR", help="""
         Path to the git repository, by default auto-discovered by searching
         the current directory and its parents for a .git/ subdirectory.
@@ -115,13 +121,6 @@ def parse_args():
         Path to the work tree root, by default the parent of GITDIR if it's
         automatically discovered, or the current directory if GITDIR is set.
         """)
-
-    # Do not add this to CLI before handling PATH nargs accordingly!
-    # parser.add_argument('--git-cwd', '-C', dest='cwd', metavar="DIR", help="""
-    #     Run as if git was started in directory %(metavar)s.
-    #     This affects how --work-tree, --git-dir and PATH arguments are handled.
-    #     See git --help for more information.
-    #     """)
 
     parser.add_argument('--force', '-f', default=False, action="store_true",
         help="Force execution on trees with uncommitted changes.")
@@ -453,8 +452,19 @@ def main():
     log.trace("Arguments: %s", args)
 
     # First things first: Where and Who are we?
+    if args.cwd:
+        log.debug("Changing directory: %s", args.cwd)
+        try:
+            os.chdir(args.cwd)
+        except OSError as e:
+            log.critical(e)
+            return e.errno
+    # Using both os.chdir() and `git -C` is redundant, but might prevent side effects
+    # `git -C` alone could be enough if we make sure that:
+    # - all paths, including args.pathspec, are processed by git: ls-files, rev-parse
+    # - touch() / os.utime() path argument is always prepended with git.workdir
     try:
-        git = Git(args.workdir, args.gitdir)
+        git = Git(workdir=args.workdir, gitdir=args.gitdir, cwd=args.cwd)
     except Git.Error as e:
         # Not in a git repository, and git already informed user on stderr. So we just...
         return e.returncode

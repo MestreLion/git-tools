@@ -13,6 +13,8 @@ recent commit that modified them
 .RB [ -h ]
 .RB [ --quiet | --verbose ]
 .br
+.RB [ --C
+.IR DIRECTORY ]
 .RB [ --work-tree
 .IR WORKDIR ]
 .RB [ --git-dir
@@ -55,6 +57,12 @@ suppress informative messages and summary statistics.
 .BR \-\-verbose , \-v
 Print additional information for each processed file.
 Specify twice to further increase verbosity.
+.TP 8
+.BI \-C\  DIRECTORY\fR,\  \-\-cwd\  DIRECTORY
+Run as if \fBgit-restore-mtime\fR was started in directory \fIDIRECTORY\fR.
+This affects how \fB--work-tree\fR, \fB--git-dir\fR and \fIpathspec\fR arguments
+are handled.
+See \fBgit\fR(1) for more information.
 .TP 8
 .BI \-\-git-dir\  GITDIR
 Path to the git repository, by default auto-discovered by searching
