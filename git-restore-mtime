@@ -18,15 +18,15 @@
 #    along with this program. See <http://www.gnu.org/licenses/gpl.html>
 #
 """
-Change the modification time (mtime) of all files in work tree, based on the
-date of the most recent commit that modified the file.
+Change the modification time (mtime) of files in work tree, based on the
+date of the most recent commit that modified the file, including renames.
 
+Ignores untracked files and uncommitted deletions, additions and renames, and
+by default modifications too.
+---
 Useful prior to generating release tarballs, so each file is archived with a
 date that is similar to the date when the file was actually last modified,
 assuming the actual modification date and its commit date are close.
-
-Ignores by default all ignored and untracked files, and also refuses to work
-on trees with uncommitted changes.
 """
 
 # TODO:
@@ -95,7 +95,7 @@ UTIME_KWS = {} if not UPDATE_SYMLINKS else {'follow_symlinks': False}
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description=__doc__.split('\n\n')[0])
+        description=__doc__.split('\n---')[0])
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--quiet', '-q', dest='loglevel',
@@ -122,8 +122,11 @@ def parse_args():
         automatically discovered, or the current directory if GITDIR is set.
         """)
 
-    parser.add_argument('--force', '-f', default=False, action="store_true",
-        help="Force execution on trees with uncommitted changes.")
+    parser.add_argument('--force', '-f', default=False, action="store_true", help="""
+        Force updating files with uncommitted modifications.
+        Untracked files and uncommitted deletions, renames and additions are
+        always ignored.
+        """)
 
     parser.add_argument('--merge', '-m', default=False, action="store_true", help="""
         Include merge commits.
@@ -310,6 +313,12 @@ class Git:
     def is_dirty(self):
         return bool(self._run('diff --no-ext-diff --quiet', output=False))
 
+    def ls_dirty(self, force=False):
+        return (normalize(_[3:].split(' -> ', 1)[-1])
+                for _ in self._run('status --porcelain')
+                if _[:2] != '??' and (not force or (_[0] in ('R', 'A')
+                                                    or _[1] == 'D')))
+
     def log(self, merge=False, first_parent=False, commit_time=False,
             reverse_order=False, paths: list = None):
         cmd = 'whatchanged --pretty={}'.format('%ct' if commit_time else '%at')
@@ -352,7 +361,7 @@ class Git:
             except subprocess.CalledProcessError as e:
                 raise self.Error(e.returncode, e.cmd, e.output, e.stderr)
         self._proc = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, **popen_args)
-        return (_.strip() for _ in self._proc.stdout)
+        return (_.rstrip() for _ in self._proc.stdout)
 
     def __del__(self):
         self.terminate()
@@ -417,7 +426,7 @@ def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
                 touch(os.path.join(git.workdir, file), mtime)
                 stats['touches'] += 1
             except Exception as e:
-                log.error("ERROR: %s", e)
+                log.error("ERROR: %s: %s", e, file)
                 stats['errors'] += 1
 
         if args.dirs and status in ('A', 'D'):
@@ -432,7 +441,7 @@ def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
                     touch(os.path.join(git.workdir, dirname), mtime)
                     stats['dirtouches'] += 1
                 except Exception as e:
-                    log.error("ERROR: %s", e)
+                    log.error("ERROR: %s: %s", e, dirname)
                     stats['direrrors'] += 1
 
         # All files done?
@@ -469,22 +478,11 @@ def main():
         # Not in a git repository, and git already informed user on stderr. So we just...
         return e.returncode
 
-    # Do not work on dirty repositories, unless --force
-    if not args.force and git.is_dirty():
-        log.critical(
-            "ERROR: There are local changes in the working directory.\n"
-            "This could lead to undesirable results for modified files.\n"
-            "Please, commit your changes (or use --force) and try again.\n"
-            "Aborting")
-        return 1
-
-    # Get the files managed by git and build file and dir list to be processed
-    filelist = set()
-    dirlist  = set()
+    # Get the files managed by git and build file list to be processed
     if UPDATE_SYMLINKS and not args.skip_older_than:
         filelist = set(git.ls_files(args.pathspec))
-        dirlist  = set(os.path.dirname(_) for _ in filelist)
     else:
+        filelist = set()
         for path in git.ls_files(args.pathspec):
             fullpath = os.path.join(git.workdir, path)
 
@@ -499,9 +497,23 @@ def main():
                     and start - get_mtime_path(fullpath) > args.skip_older_than):
                 continue
 
-            # Always add them relative to worktree root
+            # Always add files relative to worktree root
             filelist.add(path)
-            dirlist.add(os.path.dirname(path))
+
+    # If --force, silently ignore uncommitted deletions (not in the filesystem)
+    # and renames / additions (will not be found in log anyway)
+    if args.force:
+        filelist -= set(git.ls_dirty(force=True))
+    # Otherwise, ignore any dirty files
+    else:
+        dirty = set(git.ls_dirty())
+        if dirty:
+            log.warning("WARNING: Modified files in the working directory were ignored."
+                "\nTo include such files, commit your changes or use --force.")
+            filelist -= dirty
+
+    # Build dir list to be processed
+    dirlist = set(os.path.dirname(_) for _ in filelist) if args.dirs else set()
 
     stats['totalfiles'] = stats['files'] = len(filelist)
     log.info("{0:,} files to be processed in work dir".format(stats['totalfiles']))
