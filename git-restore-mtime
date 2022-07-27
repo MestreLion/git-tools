@@ -352,10 +352,10 @@ class Git:
             except subprocess.CalledProcessError as e:
                 raise self.Error(e.returncode, e.cmd, e.output, e.stderr)
         self._proc = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, **popen_args)
-        try:
-            return (_.strip() for _ in self._proc.stdout)
-        finally:
-            self._proc = None
+        return (_.strip() for _ in self._proc.stdout)
+
+    def __del__(self):
+        self.terminate()
 
     class Error(subprocess.CalledProcessError):
         """Error from git executable"""
