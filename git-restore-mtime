@@ -310,9 +310,6 @@ class Git:
     def ls_files(self, paths: list = None):
         return (normalize(_) for _ in self._run('ls-files --full-name', paths))
 
-    def is_dirty(self):
-        return bool(self._run('diff --no-ext-diff --quiet', output=False))
-
     def ls_dirty(self, force=False):
         return (normalize(_[3:].split(' -> ', 1)[-1])
                 for _ in self._run('status --porcelain')
