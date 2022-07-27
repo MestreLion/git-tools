@@ -13,7 +13,7 @@ recent commit that modified them
 .RB [ -h ]
 .RB [ --quiet | --verbose ]
 .br
-.RB [ --C
+.RB [ -C
 .IR DIRECTORY ]
 .RB [ --work-tree
 .IR WORKDIR ]
@@ -70,11 +70,11 @@ See \fBgit\fR(1) for more information.
 .TP 8
 .BI \-\-git-dir\  GITDIR
 Path to the git repository, by default auto-discovered by searching
-the current directory and its parents for a .git/ subdirectory.
+the current directory and its parents for a \fI.git/\fR subdirectory.
 .TP 8
 .BI \-\-work-tree\  WORKDIR
-Path to the work tree root, by default the parent of GITDIR if it's
-automatically discovered, or the current directory if GITDIR is set.
+Path to the work tree root, by default the parent of \fIGITDIR\fR if it's
+automatically discovered, or the current directory if \fIGITDIR\fR is set.
 .TP 8
 .BR \-\-force ,\  \-f
 Force updating files with uncommitted modifications.
@@ -92,13 +92,13 @@ By default, merge commits are only used for files missing from regular commits.
 .TP 8
 .BR \-\-first-parent
 Consider only the first parent, the "main branch", when evaluating merge commits.
-Only effective when merge commits are processed, either when --merge is
+Only effective when merge commits are processed, either when \fB--merge\fR is
 used or when finding missing files after the first regular log search.
-See --skip-missing.
+See \fB--skip-missing\fR.
 .TP 8
 .BR \-\-skip-missing ,\  \-s
 Do not try to find missing files.
-If merge commits were not evaluated with --merge and some files were
+If merge commits were not evaluated with \fB--merge\fR and some files were
 not found in regular commits, by default \fBrestore-mtime\fR searches for these
 files again in the merge commits.
 This option disables this retry, so files found only in merge commits
@@ -122,7 +122,7 @@ file "creation" date. Note this will be inaccurate for files deleted and
 re-created at later dates.
 .TP 8
 .BI \-\-skip-older-than\  SECONDS
-Ignore files that are currently older than SECONDS.
+Ignore files that are currently older than \fISECONDS\fR.
 Useful in workflows that assume such files already have a correct timestamp,
 as it may improve performance by processing fewer files.
 .TP 8
@@ -151,6 +151,8 @@ the timestamp of several files, further git operations may emit the error:
 .br
 This is harmless, and can be fixed by running \fBgit-status\fR(1).
 .SH SEE ALSO
+.BR git (1),\  git-log (1),\  git-ls-files (1),\  git-status (1)
+.br
 .B https://github.com/MestreLion/git-tools
 .SH AUTHOR
 Rodrigo Silva (MestreLion) linux@rodrigosilva.com
