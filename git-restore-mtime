@@ -108,7 +108,7 @@ def parse_args():
 
     parser.add_argument('--cwd', '-C', metavar="DIRECTORY", help="""
         Run as if %(prog)s was started in directory %(metavar)s.
-        This affects how --work-tree, --git-dir and PATH arguments are handled.
+        This affects how --work-tree, --git-dir and PATHSPEC arguments are handled.
         See 'man 1 git' or 'git --help' for more information.
         """)
 
@@ -191,7 +191,7 @@ def parse_args():
         as git's time accuracy is in seconds.
         """)
 
-    parser.add_argument('pathspec', nargs='*', metavar='PATH', help="""
+    parser.add_argument('pathspec', nargs='*', metavar='PATHSPEC', help="""
         Only modify paths matching %(metavar)s, relative to current directory.
         By default, update all but untracked files and submodules.
         """)

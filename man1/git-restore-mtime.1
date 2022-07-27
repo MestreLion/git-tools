@@ -34,8 +34,8 @@ recent commit that modified them
 .RB [ --unique-times ]
 .RB [ --version ]
 .br
-.RI [ pathspec
-.RI [ pathspec ...]]
+.RI [ PATHSPEC
+.RI [ PATHSPEC ...]]
 .SH DESCRIPTION
 Change the modification time (mtime) of files in the work tree based on the
 date of the most recent commit that modified the file, as an attempt to
@@ -43,8 +43,8 @@ restore the original modification time. Useful when generating release tarballs.
 .SH OPTIONS
 .SS Positional arguments:
 .TP 8
-.I pathspec
-Only modify paths matching PATH, relative to current directory.
+.I PATHSPEC
+Only modify paths matching \fIPATHSPEC\fR, relative to current directory.
 By default, update all but untracked files and submodules.
 .SS Optional arguments:
 .TP 8
@@ -60,7 +60,7 @@ Specify twice to further increase verbosity.
 .TP 8
 .BI \-C\  DIRECTORY\fR,\  \-\-cwd\  DIRECTORY
 Run as if \fBgit-restore-mtime\fR was started in directory \fIDIRECTORY\fR.
-This affects how \fB--work-tree\fR, \fB--git-dir\fR and \fIpathspec\fR arguments
+This affects how \fB--work-tree\fR, \fB--git-dir\fR and \fIPATHSPEC\fR arguments
 are handled.
 See \fBgit\fR(1) for more information.
 .TP 8
