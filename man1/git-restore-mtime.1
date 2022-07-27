@@ -41,6 +41,9 @@ recent commit that modified them
 Change the modification time (mtime) of files in the work tree based on the
 date of the most recent commit that modified the file, as an attempt to
 restore the original modification time. Useful when generating release tarballs.
+
+Ignore untracked files and uncommitted deletions, additions and renames, and
+by default modifications too.
 .SH OPTIONS
 .SS Positional arguments:
 .TP 8
@@ -74,7 +77,9 @@ Path to the work tree root, by default the parent of GITDIR if it's
 automatically discovered, or the current directory if GITDIR is set.
 .TP 8
 .BR \-\-force ,\  \-f
-Force execution on trees with uncommitted changes.
+Force updating files with uncommitted modifications.
+Untracked files and uncommitted deletions, renames and additions are
+always ignored.
 .TP 8
 .BR \-\-merge ,\  \-m
 Include merge commits.
