@@ -409,12 +409,10 @@ def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
         # Handles non-ASCII chars and OS path separator
         file = normalize(file)
 
-        if file in filelist:
-            stats['files'] -= 1
-            filelist.remove(file)
+        def do_file():
             if args.skip_older_than_commit and get_mtime_path(file) <= mtime:
                 stats['skip'] += 1
-                continue
+                return
             if args.debug:
                 log.debug("%d\t%d\t%d\t%s\t%s",
                           stats['loglines'], stats['commits'], stats['files'],
@@ -426,20 +424,28 @@ def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
                 log.error("ERROR: %s: %s", e, file)
                 stats['errors'] += 1
 
+        def do_dir():
+            if args.debug:
+                log.debug("%d\t%d\t-\t%s\t%s",
+                          stats['loglines'], stats['commits'],
+                          datestr, "{}/".format(dirname or '.'))
+            try:
+                touch(os.path.join(git.workdir, dirname), mtime)
+                stats['dirtouches'] += 1
+            except Exception as e:
+                log.error("ERROR: %s: %s", e, dirname)
+                stats['direrrors'] += 1
+
+        if file in filelist:
+            stats['files'] -= 1
+            filelist.remove(file)
+            do_file()
+
         if args.dirs and status in ('A', 'D'):
             dirname = os.path.dirname(file)
             if dirname in dirlist:
-                if args.debug:
-                    log.debug("%d\t%d\t-\t%s\t%s",
-                              stats['loglines'], stats['commits'],
-                              datestr, "{}/".format(dirname or '.'))
                 dirlist.remove(dirname)
-                try:
-                    touch(os.path.join(git.workdir, dirname), mtime)
-                    stats['dirtouches'] += 1
-                except Exception as e:
-                    log.error("ERROR: %s: %s", e, dirname)
-                    stats['direrrors'] += 1
+                do_dir()
 
         # All files done?
         if not stats['files']:
