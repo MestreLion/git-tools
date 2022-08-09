@@ -301,11 +301,11 @@ class Git:
     def __init__(self, workdir=None, gitdir=None, cwd=None, errors=True):
         self.gitcmd = ['git']
         self.errors = errors
+        self._proc = None
         if workdir: self.gitcmd.extend(('--work-tree', workdir))
         if gitdir:  self.gitcmd.extend(('--git-dir',   gitdir))
         if cwd:     self.gitcmd.extend(('-C',          cwd))
         self.workdir, self.gitdir = self._get_repo_dirs()
-        self._proc = None
 
     def ls_files(self, paths: list = None):
         return (normalize(_) for _ in self._run('ls-files --full-name', paths))
