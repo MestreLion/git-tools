@@ -205,7 +205,7 @@ def parse_args():
     args_ = parser.parse_args()
     if args_.verbose:
         args_.loglevel = max(logging.TRACE, logging.DEBUG // args_.verbose)
-    args_.debug = args_.loglevel == logging.DEBUG
+    args_.debug = args_.loglevel <= logging.DEBUG
     return args_
 
 
