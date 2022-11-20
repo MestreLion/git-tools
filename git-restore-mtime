@@ -345,7 +345,7 @@ class Git:
         if paths:
             cmdlist.append('--')
             cmdlist.extend(paths)
-        popen_args = dict(universal_newlines=True)
+        popen_args = dict(universal_newlines=True, encoding='utf8')
         if not self.errors:
             popen_args['stderr'] = subprocess.DEVNULL
         log.trace("Executing: %s", ' '.join(cmdlist))
