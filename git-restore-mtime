@@ -76,7 +76,7 @@ import subprocess
 import sys
 import time
 
-__version__ = "2022.07+dev"
+__version__ = "2022.12"
 
 # Update symlinks only if the platform supports not following them
 UPDATE_SYMLINKS = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
