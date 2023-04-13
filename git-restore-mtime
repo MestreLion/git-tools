@@ -294,6 +294,37 @@ def get_mtime_ns(secs: int, idx: int):
 def get_mtime_path(path):
     return os.path.getmtime(path)
 
+class DirectoryMtimes(object):
+    """
+    Track mtimes for path.
+    Lets the newer mtime bubble up to the parent entries.
+    """
+
+    def __init__(self):
+        self.mtimes = {}
+
+    def set_path_mtime(self, path, mtime):
+        """Set mtime of path. Also updates parent paths if mtime is newer."""
+        path_parts = os.path.normpath(path).split(os.sep)
+
+        # Update mtimes for path and parent paths.
+        # Note: '' is a valid path we track an mtime for
+        while True:
+            key = tuple(path_parts)
+            current_mtime = self.mtimes.get(key)
+            if current_mtime is None or current_mtime < mtime:
+                self.mtimes[key] = mtime
+            else:
+                # Assume parent mtimes are already newer
+                break
+
+            if len(path_parts) == 0: break
+            path_parts = path_parts[:-1]
+
+    def get_path_mtime(self, path):
+        """Get mtime recorded for a path"""
+        path_parts = os.path.normpath(path).split(os.sep)
+        return self.mtimes.get(tuple(path_parts))
 
 # Git class and parse_log(), the heart of the script ##########################
 
@@ -367,7 +398,7 @@ class Git:
         """Error from git executable"""
 
 
-def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
+def parse_log(filelist, dirlist, dir_times, stats, git, merge=False, filterlist=None):
     mtime = 0
     datestr = isodate(0)
     for line in git.log(
@@ -440,12 +471,14 @@ def parse_log(filelist, dirlist, stats, git, merge=False, filterlist=None):
             stats['files'] -= 1
             filelist.remove(file)
             do_file()
+            dir_times.set_path_mtime(file, mtime)
 
         if args.dirs and status in ('A', 'D'):
             dirname = os.path.dirname(file)
             if dirname in dirlist:
                 dirlist.remove(dirname)
                 do_dir()
+                dir_times.set_path_mtime(dirname, mtime)
 
         # All files done?
         if not stats['files']:
@@ -525,9 +558,11 @@ def main():
         # Nothing to do. Exit silently and without errors, just like git does
         return
 
+    dir_times = DirectoryMtimes()
+
     # Process the log until all files are 'touched'
     log.debug("Line #\tLog #\tF.Left\tModification Time\tFile Name")
-    parse_log(filelist, dirlist, stats, git, args.merge, args.pathspec)
+    parse_log(filelist, dirlist, dir_times, stats, git, args.merge, args.pathspec)
 
     # Missing files
     if filelist:
@@ -538,7 +573,7 @@ def main():
             missing = len(filterlist)
             log.info("{0:,} files not found in log, trying merge commits".format(missing))
             for i in range(0, missing, STEPMISSING):
-                parse_log(filelist, dirlist, stats, git,
+                parse_log(filelist, dirlist, dir_times, stats, git,
                           merge=True, filterlist=filterlist[i:i + STEPMISSING])
 
         # Still missing some?
