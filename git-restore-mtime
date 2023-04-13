@@ -397,6 +397,17 @@ class Git:
     class Error(subprocess.CalledProcessError):
         """Error from git executable"""
 
+def touch_dir(dirname, mtime, datestr, stats, git):
+    if args.debug:
+        log.debug("%d\t%d\t-\t%s\t%s",
+                    stats['loglines'], stats['commits'],
+                    datestr, "{}/".format(dirname or '.'))
+    try:
+        touch(os.path.join(git.workdir, dirname), mtime)
+        stats['dirtouches'] += 1
+    except Exception as e:
+        log.error("ERROR: %s: %s", e, dirname)
+        stats['direrrors'] += 1
 
 def parse_log(filelist, dirlist, dir_times, stats, git, merge=False, filterlist=None):
     mtime = 0
@@ -456,16 +467,7 @@ def parse_log(filelist, dirlist, dir_times, stats, git, merge=False, filterlist=
                 stats['errors'] += 1
 
         def do_dir():
-            if args.debug:
-                log.debug("%d\t%d\t-\t%s\t%s",
-                          stats['loglines'], stats['commits'],
-                          datestr, "{}/".format(dirname or '.'))
-            try:
-                touch(os.path.join(git.workdir, dirname), mtime)
-                stats['dirtouches'] += 1
-            except Exception as e:
-                log.error("ERROR: %s: %s", e, dirname)
-                stats['direrrors'] += 1
+            touch_dir(dirname, mtime, datestr, stats, git)
 
         if file in filelist:
             stats['files'] -= 1
@@ -549,7 +551,15 @@ def main():
             filelist -= dirty
 
     # Build dir list to be processed
-    dirlist = set(os.path.dirname(_) for _ in filelist) if args.dirs else set()
+    # For every file name, also add _all_ parent directories to set, so we also consider directories
+    # with just subdirectories, but no files.
+    dirlist = set()
+    if args.dirs:
+        for fn in filelist:
+            current_dir = os.path.dirname(fn)
+            while current_dir != "":
+                dirlist.add(current_dir)
+                current_dir = os.path.dirname(current_dir)
 
     stats['totalfiles'] = stats['files'] = len(filelist)
     log.info("{0:,} files to be processed in work dir".format(stats['totalfiles']))
@@ -579,6 +589,12 @@ def main():
         # Still missing some?
         for file in filelist:
             log.warning("WARNING: not found in the log: %s", file)
+
+    # Directories not appearing in log
+    for dir in dirlist:
+        dir_mtime = dir_times.get_path_mtime(dir)
+        if dir_mtime is not None:
+            touch_dir(dir, dir_mtime, isodate(dir_mtime), stats, git)
 
     # Final statistics
     # Suggestion: use git-log --before=mtime to brag about skipped log entries
