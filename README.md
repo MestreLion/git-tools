@@ -35,6 +35,10 @@ and in EPEL repository for CentOS, Red Hat Enterprise Linux (RHEL), Oracle Linux
 
 	emerge dev-vcs/git-tools
 
+[Homebrew](https://formulae.brew.sh/formula/git-tools):
+
+	brew install git-tools
+
 [MacPorts](https://ports.macports.org/port/git-tools/details/):
 
 	sudo port install git-tools
@@ -74,9 +78,9 @@ you can still read the built-in help by directly invoking the tool:
 Uninstall
 ---------
 
-For the packaged versions, use your repository tools such as `apt`, `yum`, `emerge`.
+For the packaged versions, use your repository tools such as `apt`, `brew`, `emerge`, or `yum`.
 
-For the manual installation, just delete the directory and remove it from your `$PATH`.
+For manual installations, delete the directory and remove it from your `$PATH`.
 ```sh
 rm -rf ~/some/dir/git-tools
 sed -i '/git-tools/d' ~/.profile
