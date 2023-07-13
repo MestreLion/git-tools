@@ -241,8 +241,14 @@ def normalize(path):
     normalize(r'"Back\\slash_double\"quote_a\303\247a\303\255"') =>
         r'Back\slash_double"quote_açaí')
 
-    See notes on `windows/non-ascii-paths.txt` about path encodings on non-UTF-8
-    platforms and filesystems.
+    Paths with invalid UTF-8 encoding, such as single 0x80-0xFF bytes (e.g, from
+    Latin1/Windows-1251 encoding) are decoded using surrogate escape, the same
+    method used by Python for filesystem paths. So 0xE6 ("æ" in Latin1, r'\\346'
+    from Git) is decoded as "\udce6". See https://peps.python.org/pep-0383/ and
+    https://vstinner.github.io/painful-history-python-filesystem-encoding.html
+
+    Also see notes on `windows/non-ascii-paths.txt` about path encodings on
+    non-UTF-8 platforms and filesystems.
     """
     if path and path[0] == '"':
         # Python 2: path = path[1:-1].decode("string-escape")
@@ -250,8 +256,8 @@ def normalize(path):
         path = (path[1:-1]                 # Remove enclosing double quotes
                 .encode('latin1')          # Convert to bytes, required by 'unicode-escape'
                 .decode('unicode-escape')  # Perform the actual octal-escaping decode
-                .encode('latin1')          # 1:1 mapping to bytes, forming UTF-8 encoding
-                .decode('utf8'))           # Decode from UTF-8
+                .encode('latin1')          # 1:1 mapping to bytes, UTF-8 encoded
+                .decode('utf8', 'surrogateescape'))  # Decode from UTF-8
     if NORMALIZE_PATHS:
         # Make sure the slash matches the OS; for Windows we need a backslash
         path = os.path.normpath(path)
