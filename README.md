@@ -35,7 +35,7 @@ and in EPEL repository for CentOS, Red Hat Enterprise Linux (RHEL), Oracle Linux
 
 	emerge dev-vcs/git-tools
 
-[Arch Linux](https://aur.archlinux.org/packages/git-tools-git)
+[Arch Linux](https://aur.archlinux.org/packages/git-tools-git):
 
 	sudo pacman -S git-tools-git
 
@@ -49,7 +49,7 @@ and in EPEL repository for CentOS, Red Hat Enterprise Linux (RHEL), Oracle Linux
 
 Also available in Kali Linux, MidnightBDS _mports_, Mageia, and possibly other distributions.
 
-[GitHub Action](https://github.com/marketplace/actions/git-restore-mtime): _(`git-restore-mtime` only)_
+[GitHub Actions](https://github.com/marketplace/actions/git-restore-mtime): _(`git-restore-mtime` only)_
 ```yaml
 build:
     steps:
@@ -68,7 +68,7 @@ echo 'PATH=$PATH:~/some/dir/git-tools' >> ~/.profile  # or ~/.bashrc
 
 To install the `man` pages, simply copy (or symlink) the files from [`man1/`](man1) folder
 to `~/.local/share/man/man1`, creating the directory if necessary:
-```
+```sh
 dest=${XDG_DATA_HOME:$HOME/.local/share}/man/man1
 mkdir -p -- "$dest"
 cp -t "$dest" -- ~/some/dir/git-tools/man1/*.1  # or `ln -s -t ...`
