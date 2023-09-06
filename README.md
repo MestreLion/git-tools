@@ -17,8 +17,8 @@ If needed, the command to install dependencies for Debian-like distros (like Ubu
 
 	sudo apt install bash python3 git
 
-Install
--------
+Installation
+------------
 
 For [Debian](https://tracker.debian.org/pkg/git-mestrelion-tools),
 [Ubuntu](https://launchpad.net/ubuntu/+source/git-mestrelion-tools),
@@ -35,6 +35,10 @@ and in EPEL repository for CentOS, Red Hat Enterprise Linux (RHEL), Oracle Linux
 
 	emerge dev-vcs/git-tools
 
+[Arch Linux](https://aur.archlinux.org/packages/git-tools-git)
+
+	sudo pacman -S git-tools-git
+
 [Homebrew](https://formulae.brew.sh/formula/git-tools):
 
 	brew install git-tools
@@ -43,9 +47,17 @@ and in EPEL repository for CentOS, Red Hat Enterprise Linux (RHEL), Oracle Linux
 
 	sudo port install git-tools
 
-
 Also available in Kali Linux, MidnightBDS _mports_, Mageia, and possibly other distributions.
 
+[GitHub Action](https://github.com/marketplace/actions/git-restore-mtime): _(`git-restore-mtime` only)_
+```yaml
+build:
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: chetan/git-restore-mtime-action@v2
+```
 
 **Manual install**: to run from the repository tree, just clone and add the installation directory to your `$PATH`:
 ```sh
@@ -53,6 +65,15 @@ cd ~/some/dir
 git clone https://github.com/MestreLion/git-tools.git
 echo 'PATH=$PATH:~/some/dir/git-tools' >> ~/.profile  # or ~/.bashrc
 ```
+
+To install the `man` pages, simply copy (or symlink) the files from [`man1/`](man1) folder
+to `~/.local/share/man/man1`, creating the directory if necessary:
+```
+dest=${XDG_DATA_HOME:$HOME/.local/share}/man/man1
+mkdir -p -- "$dest"
+cp -t "$dest" -- ~/some/dir/git-tools/man1/*.1  # or `ln -s -t ...`
+```
+
 
 Usage
 -----
@@ -80,9 +101,9 @@ Uninstall
 
 For the packaged versions, use your repository tools such as `apt`, `brew`, `emerge`, or `yum`.
 
-For manual installations, delete the directory and remove it from your `$PATH`.
+For manual installations, delete the directory, manpages, and remove it from your `$PATH`.
 ```sh
-rm -rf ~/some/dir/git-tools
+rm -rf ~/some/dir/git-tools  # and optionally ~/.local/share/man/man1/git-*.1
 sed -i '/git-tools/d' ~/.profile
 ```
 ---
