@@ -8,7 +8,7 @@ Requirements
 ------------
 
 - **Git** (duh!). Tested in v2.17.1 and prior versions since 2010
-- **Python** (for `git-restore-mtime`). Tested in Python 3.6, also works in Python 3.1+
+- **Python** (for `git-restore-mtime`). Requires Python 3.8 or later
 - **Bash** (for all other tools). Tested in Bash 4, some may work in Bash 3 or even `sh`
 
 Bash and Python are already installed by default in virtually all GNU/Linux distros.
