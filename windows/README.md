@@ -4,7 +4,7 @@ Tools to build a stand-alone Windows executable
 Windows batch files to build a stand-alone Windows executable
 that can be distributed without the need to install Python.
 At this time the batch file only builds an executable for
-git-restore-mtime: git-restore-mtime.exe.
+git-restore-mtime: `git-restore-mtime.exe`.
 
 
 Requirements
@@ -54,12 +54,7 @@ Installing the latest version of pyinstaller:
 pip.exe install --trusted-host pypi.org --trusted-host files.pythonhosted.org ^
     https://github.com/pyinstaller/pyinstaller/archive/develop.tar.gz
 ```
-
-
-
 Creating the Windows Executable
--------------------------------
-
 If all dependencies are met, all you have to do is doubleclick (or run from a non-elevated command prompt):
 ```
 build_windows_executable.bat
@@ -68,3 +63,16 @@ This should result in a 'dist\git-restore-mtime.exe' file.
 
 All other files that are created are temporary files:
 Both 'git-restore-mtime.spec' and the 'build/' directory can be discarded.
+
+---
+
+Note on Anti-Virus scan reports
+-------------------------------
+
+Some Anti Virus tools such as TotalVirus may report the generated `git-restore-mtime.exe` as containing malware.
+
+**This is a false positive**, and a known issue with all software built using `pyinstaller`.
+The rationale and a possible workaround is best described in this [pyinstaller's issue](https://github.com/pyinstaller/pyinstaller/issues/6754):
+
+> The only way you can avoid getting false positives is to sign your executable, which requires paying for a certificate.
+> The false positives occur because some people use PyInstaller for malware, and PyInstaller's bootloader is the only guaranteed common piece between them all.
