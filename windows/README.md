@@ -12,7 +12,7 @@ Requirements
 
 - **Windows**. Tested with Windows 8.1
 - **Git**. Tested in v2.17.1 and prior versions since 2010
-- **Python**. Tested in Python 3.8.0.
+- **Python**. Requires at least Python 3.8.0
 - **pip**. Tested with pip 19.3.1
 - **setuptools**. Tested with setuptools 42.0.0
 - **pyinstaller**. Tested with pyinstaller 4.0.dev0+1eadfa55f2
