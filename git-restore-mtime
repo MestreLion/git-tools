@@ -325,8 +325,15 @@ class Git:
     def log(self, merge=False, first_parent=False, commit_time=False,
             reverse_order=False, paths: list = None):
         cmd = 'whatchanged --pretty={}'.format('%ct' if commit_time else '%at')
-        if merge:         cmd += ' -m'
-        if first_parent:  cmd += ' --first-parent'
+
+        if merge:
+            if first_parent:
+                cmd += ' --diff-merges=first-parent --raw --first-parent'
+            else:
+                cmd += ' -m'
+        elif first_parent:
+            cmd += ' --first-parent'
+
         if reverse_order: cmd += ' --reverse'
         return self._run(cmd, paths)
 
