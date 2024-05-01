@@ -52,11 +52,11 @@ Also available in Kali Linux, MidnightBDS _mports_, Mageia, and possibly other d
 [GitHub Actions](https://github.com/marketplace/actions/git-restore-mtime): _(`git-restore-mtime` only)_
 ```yaml
 build:
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - uses: chetan/git-restore-mtime-action@v2
+  steps:
+  - uses: actions/checkout@v3
+    with:
+      fetch-depth: 0
+  - uses: chetan/git-restore-mtime-action@v2
 ```
 
 **Manual install**: to run from the repository tree, just clone and add the installation directory to your `$PATH`:
