@@ -1,5 +1,3 @@
 .*
-!.gitignore
-!.editorconfig
 ref/
 git_restore_mtime.py

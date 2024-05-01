@@ -36,7 +36,7 @@ but then you have to add the specific user directory to the PATH to make everyth
 Installing Chocolatey (<https://chocolatey.org/courses/installation/installing?method=installing-chocolatey>):
 ```cmd
 @"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass ^
-    -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" ^
+	-Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" ^
 && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
 ```
 
@@ -52,7 +52,7 @@ pip.exe install --upgrade --trusted-host pypi.org --trusted-host files.pythonhos
 Installing the latest version of pyinstaller:
 ```cmd
 pip.exe install --trusted-host pypi.org --trusted-host files.pythonhosted.org ^
-    https://github.com/pyinstaller/pyinstaller/archive/develop.tar.gz
+	https://github.com/pyinstaller/pyinstaller/archive/develop.tar.gz
 ```
 Creating the Windows Executable
 If all dependencies are met, all you have to do is doubleclick (or run from a non-elevated command prompt):

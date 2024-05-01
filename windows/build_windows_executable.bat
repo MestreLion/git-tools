@@ -39,7 +39,7 @@ PAUSE
 ECHO.
 ECHO Installing/updating Chocolatey...
 @"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass ^
-    -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" ^
+	-Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" ^
 && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
 
 ECHO.
@@ -53,7 +53,7 @@ pip.exe install --upgrade --trusted-host pypi.org --trusted-host files.pythonhos
 ECHO.
 ECHO Installing latest version of pyinstaller...
 pip.exe install --trusted-host pypi.org --trusted-host files.pythonhosted.org ^
-    https://github.com/pyinstaller/pyinstaller/archive/develop.tar.gz
+	https://github.com/pyinstaller/pyinstaller/archive/develop.tar.gz
 
 ECHO.
 ECHO Finished!
