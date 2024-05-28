@@ -35,9 +35,9 @@ and in EPEL repository for CentOS, Red Hat Enterprise Linux (RHEL), Oracle Linux
 
 	emerge dev-vcs/git-tools
 
-[Arch Linux](https://aur.archlinux.org/packages/git-tools-git):
+Arch Linux [AUR](https://aur.archlinux.org/packages/git-tools-git):
 
-	sudo pacman -S git-tools-git
+Follow the [AUR instructions](https://wiki.archlinux.org/title/Arch_User_Repository#Installing_and_upgrading_packages) to build and install a package from the user contributed PKGBUILD or use your favorite AUR helper. Note this is a recipie for a VCS package that installs the latest Git HEAD as of the time you build the package, not the latest stable taggged version.
 
 [Homebrew](https://formulae.brew.sh/formula/git-tools):
 
