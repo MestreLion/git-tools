@@ -22,7 +22,7 @@ for path in (sys.argv[1:] or [os.path.curdir]):
                 filelist.add(os.path.relpath(os.path.join(root, file)))
 
 mtime = 0
-gitobj = subprocess.Popen(shlex.split('git whatchanged --pretty=%at'),
+gitobj = subprocess.Popen(shlex.split('git whatchanged --no-show-signature --pretty=%at'),
                           stdout=subprocess.PIPE)
 for line in gitobj.stdout:
     line = line.strip()
