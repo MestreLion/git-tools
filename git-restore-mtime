@@ -81,7 +81,7 @@ if sys.version_info < (3, 8):
 __version__ = "2022.12+dev"
 
 # Update symlinks only if the platform supports not following them
-UPDATE_SYMLINKS = bool({os.utime, os.stat} <= getattr(os, 'supports_follow_symlinks', {}))
+UPDATE_SYMLINKS = bool({os.utime, os.stat} <= getattr(os, 'supports_follow_symlinks', set()))
 
 # Call os.path.normpath() only if not in a POSIX platform (Windows)
 NORMALIZE_PATHS = (os.path.sep != '/')
