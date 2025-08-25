@@ -326,8 +326,8 @@ class Git:
 
     def log(self, merge=False, first_parent=False, commit_time=False,
             reverse_order=False, paths: list = None):
-        cmd = 'whatchanged --no-show-signature --pretty={}'.format('%ct' if commit_time else '%at')
-        if merge:         cmd += ' -m'
+        cmd = 'log --raw --no-show-signature --pretty={}'.format('%ct' if commit_time else '%at')
+        cmd += ' -m' if merge else ' --no-merges'
         if first_parent:  cmd += ' --first-parent'
         if reverse_order: cmd += ' --reverse'
         return self._run(cmd, paths)
