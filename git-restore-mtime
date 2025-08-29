@@ -30,7 +30,7 @@ assuming the actual modification date and its commit date are close.
 """
 
 # TODO:
-# - Add -z on git whatchanged/ls-files, so we don't deal with filename decoding
+# - Add -z on git log/ls-files, so we don't deal with filename decoding
 # - Update "Statistics for some large projects" with modern hardware and repositories.
 # - Create a README.md for git-restore-mtime alone. It deserves extensive documentation
 #   - Move Statistics there
@@ -81,7 +81,7 @@ if sys.version_info < (3, 8):
 __version__ = "2022.12+dev"
 
 # Update symlinks only if the platform supports not following them
-UPDATE_SYMLINKS = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
+UPDATE_SYMLINKS = bool({os.utime, os.stat} <= getattr(os, 'supports_follow_symlinks', set()))
 
 # Call os.path.normpath() only if not in a POSIX platform (Windows)
 NORMALIZE_PATHS = (os.path.sep != '/')
@@ -300,7 +300,7 @@ def get_mtime_ns(secs: int, idx: int):
 
 
 def get_mtime_path(path):
-    return os.path.getmtime(path)
+    return os.stat(path, **UTIME_KWS).st_mtime
 
 
 # Git class and parse_log(), the heart of the script ##########################
